@@ -330,10 +330,11 @@
             L.popup().setLatLng(map.getCenter()).setContent(impressumHtml).openOn(map);
         }
 
-        function openAbout() {
+function openAbout() {
     const aboutHtml = `
         <div style="text-align: left; max-height: 400px; overflow-y: auto; padding: 15px; line-height: 1.5;">
-            <h2 style="margin-top:0;">Über den Kornelkirschen-Monitor 🍒</h2>
+            <h2 style="margin-top:0; color: #27ae60;">Über den Kornelkirschen-Monitor 🍒</h2>
+            
             <p><b>Warum diese App?</b><br>
             Vielleicht ist es dir auch schon aufgefallen: Im Vorfrühling leuchten unsere Gärten und Parks überall knallgelb. Meistens ist das die Forsythie. Sie sieht prächtig aus, verbirgt aber ein ökologisches Geheimnis: Für unsere Insektenwelt ist sie so nützlich wie eine Plastikblume, da sie weder Pollen noch Nektar bietet.</p>
             
@@ -343,16 +344,16 @@
             <p><b>Unsere Mission</b><br>
             Der Kornelkirschen-Monitor ist ein Herzensprojekt für alle, denen Biodiversität und Artenschutz wichtig sind. Wir möchten:</p>
             <ul style="padding-left: 20px; margin-top: 0;">
-            <li><b>Sichtbarkeit schaffen:</b> Wo wachsen sie noch, die echten Kornelkirschen?</li>
-            <li><b>Wissen teilen:</b> Damit dieser wertvolle Strauch wieder einen festen Platz in unseren Köpfen und Gärten findet.</li>
-            <li><b>Gemeinsam dokumentieren:</b> Hilf mit, Standorte einzutragen, um eine lebendige Landkarte unserer Natur zu weben.</li>
+                <li><b>Sichtbarkeit schaffen:</b> Wo wachsen sie noch, die echten Kornelkirschen?</li>
+                <li><b>Wissen teilen:</b> Damit dieser wertvolle Strauch wieder einen festen Platz in unseren Köpfen und Gärten findet.</li>
+                <li><b>Gemeinsam dokumentieren:</b> Hilf mit, Standorte einzutragen, um eine lebendige Landkarte unserer Natur zu weben.</li>
             </ul>
             
             <p>Egal ob du Standorte für die Ernte suchst, Setzlinge ziehen willst (bitte immer geltendes Naturschutzrecht beachten!) oder einfach nur neugierig bist:</p>
 
-            <p>Schön, dass du dabei bist!</p>
+            <p style="font-weight: bold; text-align: center;">Schön, dass du dabei bist! 🍒✨</p>
 
-            <p style="font-style: italic; font-size: 11px; border-top: 1px solid #eee; padding-top: 10px;">
+            <p style="font-style: italic; font-size: 11px; border-top: 1px solid #eee; padding-top: 10px; margin-top: 15px; color: #666;">
                 Ein kleiner technischer Hinweis: Dieses Projekt wurde von einem Naturfreund ohne vorherige Coding-Erfahrung ins Leben gerufen – erstellt mit der kreativen und technischen Unterstützung der KI Gemini. Ein Beweis dafür, dass Technik dabei helfen kann, unsere echte Umwelt besser zu verstehen.
             </p>
         </div>
