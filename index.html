@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kornelkirschen-Monitor v3.4</title>
+    <title>Kornelkirschen-Monitor v3.5</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery.min.css" />
@@ -434,26 +434,47 @@
 
         // 1. Die Funktion muss GANZ oben (oder zumindest vor dem Button) klar definiert sein
         function locateMe() { 
-            console.log("GPS Button wurde gedrückt"); // Zum Testen in der Konsole
-            map.locate({setView: true, maxZoom: 16}); 
+            console.log("GPS Button aktiv - starte Suche..."); 
+            
+            // 1. Eventuelle laufende Suchen stoppen
+            map.stopLocate(); 
+
+            // 2. Neu suchen mit hoher Priorität
+            map.locate({
+                setView: true, 
+                maxZoom: 16,
+                enableHighAccuracy: true // Erzwingt präziseres GPS
+            }); 
         }
             // 2. Den Nutzer-Kreis zeichnen, wenn Position gefunden wurde
-            map.on('locationfound', (e) => { 
-            // Erstmal alle alten blauen Kreise entfernen, damit die Karte nicht voll wird
-            map.eachLayer(layer => {
-                if (layer instanceof L.Circle && layer.options.color === '#3498db') {
-                    map.removeLayer(layer);
-                }
-            });
+            // A) Wenn die Position ERFOLGREICH gefunden wurde
+map.on('locationfound', (e) => { 
+    // Erstmal alle alten blauen Kreise entfernen
+    map.eachLayer(layer => {
+        if (layer instanceof L.Circle && layer.options.color === '#3498db') {
+            map.removeLayer(layer);
+        }
+    });
 
-            L.circle(e.latlng, {
-                radius: e.accuracy / 2,
-                interactive: false,
-                color: '#3498db',
-                fillColor: '#3498db',
-                fillOpacity: 0.15
-            }).addTo(map); 
-        });
+    // Neuen blauen Kreis zeichnen
+    L.circle(e.latlng, {
+        radius: e.accuracy / 2,
+        interactive: false,
+        color: '#3498db',
+        fillColor: '#3498db',
+        fillOpacity: 0.15
+    }).addTo(map); 
+});
+
+// B) Wenn es einen FEHLER gab (z.B. GPS am Handy aus)
+map.on('locationerror', (e) => {
+    console.error("GPS Fehler:", e.message);
+    // Wir zeigen die Meldung nur, wenn der Fehler nicht "Permission Denied" beim automatischen Start war
+    // Sonst nervt das Popup bei jedem Seitenaufruf, wenn jemand GPS deaktiviert hat.
+    if (e.message !== "Geolocation error: User denied Geolocation.") {
+        alert("Standort konnte nicht gefunden werden. Bitte prüfe deine GPS-Einstellungen.");
+    }
+});
 
                 // 3. Den Button erstellen
         const CustomLocate = L.Control.extend({
