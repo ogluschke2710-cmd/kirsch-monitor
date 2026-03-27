@@ -29,16 +29,55 @@
         }
 
         /* --- POPUPS AUF DER KARTE --- */
-        .custom-popup { font-size: 16px; width: 280px; text-align: center; }
-        .custom-popup b { display: block; margin-bottom: 5px; text-transform: capitalize; }
+        .custom-popup { 
+            font-size: 16px; 
+            width: 280px; 
+            text-align: center; 
+        }
+        .custom-popup b { 
+            display: block; 
+            margin-bottom: 5px; 
+            text-transform: capitalize; 
+        }
         .custom-popup img { 
-            width: 100%; height: 200px; object-fit: cover; 
-            border-radius: 8px; cursor: pointer; margin-bottom: 8px;
+            width: 100%; 
+            height: 200px; 
+            object-fit: cover; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            margin-bottom: 8px;
             box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
         }
         .custom-popup button { 
-            color: white; border: none; padding: 10px; width: 100%; 
-            cursor: pointer; margin-top: 10px; font-weight: bold; border-radius: 4px;
+            color: white; 
+            border: none; 
+            padding: 10px; 
+            width: 100%; 
+            cursor: pointer; 
+            margin-top: 10px; 
+            font-weight: bold; 
+            border-radius: 4px;
+        }
+
+        /* Absoluter Gleichmacher für alle Felder */
+        .custom-popup input[type="text"], 
+        .custom-popup textarea, 
+        .custom-popup select {
+            width: 100% !important;
+            padding: 10px !important;
+            box-sizing: border-box !important;
+            margin-bottom: 12px !important;
+            border: 1px solid #ccc !important;
+            border-radius: 4px !important;
+            /* Hier die explizite Liste für JEDES Feld */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+            font-size: 14px !important;
+            color: #333 !important;
+        }
+
+        .custom-popup textarea {
+            height: 80px !important;
+            resize: none; /* Verhindert das hässliche Eckchen unten rechts */
         }
 
         /* --- MARKER & FOOTER --- */

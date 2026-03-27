@@ -24,6 +24,7 @@
 - [x] Einwilligungstext (Disclaimer) im "Sichtung eintragen"-Fenster
 - [x] Zoom-Buttons am Handy fixen (überlagern GPS-Button)
 - [x] Spinner / Lade-Animation fixen (funktioniert anscheinend nicht)
+- [x] Pop-Up Notizen und Entdecker sollten gleiche Schriftart und Größe haben
 
 ---
 *Zuletzt aktualisiert: Freitagabend, 27.03.2026*
