@@ -63,7 +63,6 @@
 
         /* --- BUTTON-STEUERUNG (ZOOM & GPS) --- */
 
-        /* Das Design des GPS-Buttons */
         .leaflet-control-locate {
             background: white !important;
             width: 34px !important;
@@ -76,13 +75,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 10px !important; /* Abstand zum rechten Rand */
+            margin-right: 10px !important;
         }
 
         /* A) DESKTOP ANSICHT */
         @media (min-width: 769px) {
             .leaflet-control-locate {
-                margin-bottom: 10px !important; /* Abstand zu den Zoom-Buttons darüber */
+                margin-bottom: 10px !important;
             }
             .leaflet-control-zoom { 
                 margin-bottom: 20px !important; 
@@ -91,21 +90,23 @@
 
         /* B) MOBILE ANSICHT (Handys) */
         @media (max-width: 768px) {
-            /* Wir lassen Leaflet sie stapeln, schieben aber die ganze Gruppe hoch */
+            /* Wir schieben den gesamten Container 40px nach oben */
+            /* Damit ist er sicher über der System-Leiste */
             .leaflet-bottom.leaflet-right {
-                margin-bottom: 20px !important;
-                margin-right: 2px !important;
+                bottom: 40px !important; 
+                margin-right: 5px !important;
             }
 
             .leaflet-control-locate {
-                margin-bottom: 10px !important;
+                margin-bottom: 12px !important;
             }
 
             .footer-links {
-                bottom: 10px !important;
+                bottom: 50px !important; /* Auch die Links etwas hoch, damit es symmetrisch ist */
                 left: 10px !important;
                 max-width: 60%;
-                background: rgba(255, 255, 255, 0.9) !important; /* Etwas blickdichter am Handy */
+                background: rgba(255, 255, 255, 0.9) !important;
+                border: 1px solid #ccc;
             }
         }
     </style>
