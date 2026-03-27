@@ -73,31 +73,35 @@
     }
 }
 
-/* 1. Standard-Einstellung für Desktop (Zoom-Button etwas höher) */
+/* 1. Desktop: Alles bleibt wie gewohnt rechts */
 @media (min-width: 769px) {
     .leaflet-control-zoom { 
         margin-bottom: 70px !important; 
     }
 }
 
-/* 2. Spezial-Einstellung für Handys (Buttons sauber stapeln) */
+/* 2. Handy: GPS nach links, Zoom nach rechts unten */
 @media (max-width: 768px) {
-    /* Container für die Buttons rechts unten */
-    .leaflet-bottom.leaflet-right {
-        display: flex !important;
-        flex-direction: column-reverse !important; /* Stapelt von unten nach oben */
-        align-items: flex-end !important;
+    /* Wir erzwingen, dass der GPS-Button nach LINKS wandert */
+    .leaflet-control-locate {
+        position: fixed !important;
         bottom: 20px !important;
-        right: 10px !important;
+        left: 10px !important; /* Hier schieben wir ihn nach links! */
+        margin: 0 !important;
+        z-index: 1000;
     }
 
-    /* Abstände zwischen den einzelnen Buttons (GPS und Zoom) */
-    .leaflet-control-locate, 
-    .leaflet-bar.leaflet-control,
-    .leaflet-control-zoom { 
-        margin-bottom: 12px !important; 
-        margin-right: 0 !important;
-        position: relative !important; /* Verhindert Überlagerung */
+    /* Die Zoom-Buttons bleiben rechts unten, aber ohne Murks */
+    .leaflet-bottom.leaflet-right .leaflet-control-zoom {
+        margin-bottom: 20px !important;
+        margin-right: 10px !important;
+    }
+
+    /* Wir verstecken die Leaflet-Attribution (das kleine Leaflet-Logo), 
+       damit es links unten nicht den GPS-Button überlagert, falls nötig */
+    .leaflet-control-attribution {
+        font-size: 8px !important;
+        background: rgba(255, 255, 255, 0.7) !important;
     }
 }
     </style>
