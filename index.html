@@ -1,67 +1,103 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kornelkirschen-Monitor v3.5</title>
-    
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lg-zoom.min.css" />
-    
+    <link rel="icon" type="image/svg+xml" href="Kornelkirsche.svg">
+    <link rel="apple-touch-icon" href="Kornelkirsche.svg">
+
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Kirsch-Monitor">
     <style>
         /* --- ALLGEMEINES LAYOUT --- */
-        body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
-        #map { height: 100vh; width: 100%; }
-        
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: sans-serif;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+
         /* --- SIDEBAR / TOPBAR OBEN LINKS --- */
         .sidebar-info {
-            position: absolute; top: 10px; left: 10px; z-index: 1000;
-            background: white; padding: 10px; border: 2px solid #333;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border: 2px solid #333;
             box-shadow: 4px 4px 0px #333;
             max-width: 300px;
         }
 
         @media (max-width: 600px) {
-            .sidebar-info { top: 5px; left: 5px; right: 5px; max-width: none; padding: 8px; }
-            .sidebar-info h2 { font-size: 16px; }
-            .sidebar-info p { font-size: 13px; margin: 3px 0; }
+            .sidebar-info {
+                top: 5px;
+                left: 5px;
+                right: 5px;
+                max-width: none;
+                padding: 8px;
+            }
+
+            .sidebar-info h2 {
+                font-size: 16px;
+            }
+
+            .sidebar-info p {
+                font-size: 13px;
+                margin: 3px 0;
+            }
         }
 
         /* --- POPUPS AUF DER KARTE --- */
-        .custom-popup { 
-            font-size: 16px; 
-            width: 280px; 
-            text-align: center; 
+        .custom-popup {
+            font-size: 16px;
+            width: 280px;
+            text-align: center;
         }
-        .custom-popup b { 
-            display: block; 
-            margin-bottom: 5px; 
-            text-transform: capitalize; 
+
+        .custom-popup b {
+            display: block;
+            margin-bottom: 5px;
+            text-transform: capitalize;
         }
-        .custom-popup img { 
-            width: 100%; 
-            height: 200px; 
-            object-fit: cover; 
-            border-radius: 8px; 
-            cursor: pointer; 
+
+        .custom-popup img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
             margin-bottom: 8px;
-            box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
         }
-        .custom-popup button { 
-            color: white; 
-            border: none; 
-            padding: 10px; 
-            width: 100%; 
-            cursor: pointer; 
-            margin-top: 10px; 
-            font-weight: bold; 
+
+        .custom-popup button {
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
             border-radius: 4px;
         }
 
         /* Absoluter Gleichmacher für alle Felder */
-        .custom-popup input[type="text"], 
-        .custom-popup textarea, 
+        .custom-popup input[type="text"],
+        .custom-popup textarea,
         .custom-popup select {
             width: 100% !important;
             padding: 10px !important;
@@ -77,32 +113,57 @@
 
         .custom-popup textarea {
             height: 80px !important;
-            resize: none; /* Verhindert das hässliche Eckchen unten rechts */
+            resize: none;
+            /* Verhindert das hässliche Eckchen unten rechts */
         }
 
         /* --- MARKER & FOOTER --- */
-        .cherry-emoji-marker { font-size: 24px; display: flex; justify-content: center; align-items: center; }
-        
-        .footer-links {
-            position: absolute; bottom: 10px; left: 10px; z-index: 1000;
-            font-size: 12px; background: rgba(255,255,255,0.8); padding: 5px 8px;
-            border-radius: 4px; border: 1px solid #ccc;
+        .cherry-emoji-marker {
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .footer-links a { color: #333; text-decoration: none; cursor: pointer; font-weight: bold; }
+
+        .footer-links {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        .footer-links a {
+            color: #333;
+            text-decoration: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
 
         /* --- LADE-SPINNER --- */
         .spinner {
             display: inline-block;
             width: 14px;
             height: 14px;
-            border: 3px solid rgba(255, 255, 255, 0.3); /* Weißer Rand für den dunklen Button */
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            /* Weißer Rand für den dunklen Button */
             border-radius: 50%;
-            border-top-color: #fff; /* Der drehende Teil ist weiß */
+            border-top-color: #fff;
+            /* Der drehende Teil ist weiß */
             animation: spin 1s ease-in-out infinite;
             margin-right: 10px;
             vertical-align: middle;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
         /* --- BUTTON-STEUERUNG (ZOOM & GPS) --- */
 
@@ -111,9 +172,9 @@
             width: 34px !important;
             height: 34px !important;
             cursor: pointer;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4) !important;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4) !important;
             border-radius: 4px !important;
-            border: 2px solid rgba(0,0,0,0.2) !important;
+            border: 2px solid rgba(0, 0, 0, 0.2) !important;
             font-size: 18px;
             display: flex;
             align-items: center;
@@ -126,50 +187,55 @@
             .leaflet-control-locate {
                 margin-bottom: 10px !important;
             }
-            .leaflet-control-zoom { 
-                margin-bottom: 20px !important; 
+
+            .leaflet-control-zoom {
+                margin-bottom: 20px !important;
             }
         }
 
         /* B) MOBILE ANSICHT (Handys) */
         @media (max-width: 768px) {
+
             /* Nur die rechte Gruppe (Buttons) bleibt oben */
             .leaflet-bottom.leaflet-right {
-            bottom: 55px !important; 
-            margin-right: 5px !important;
+                bottom: 55px !important;
+                margin-right: 5px !important;
             }
 
             .leaflet-control-locate {
-            margin-bottom: 12px !important;
+                margin-bottom: 12px !important;
             }
 
-        /* Die linke Gruppe (Footer) setzen wir wieder GANZ nach unten */
+            /* Die linke Gruppe (Footer) setzen wir wieder GANZ nach unten */
             .footer-links {
-            bottom: 10px !important; /* Zurück auf Anfangswert */
-            left: 10px !important;
-            background: rgba(255, 255, 255, 0.8) !important;
-            border: 1px solid #ccc;
-            padding: 5px !important;
-            max-width: 65%;
+                bottom: 10px !important;
+                /* Zurück auf Anfangswert */
+                left: 10px !important;
+                background: rgba(255, 255, 255, 0.8) !important;
+                border: 1px solid #ccc;
+                padding: 5px !important;
+                max-width: 65%;
             }
         }
     </style>
 </head>
+
 <body>
 
     <div class="sidebar-info">
         <h2 style="margin:0">🍒 Kornelkirschen-Map</h2>
         <p>Klicke auf die Karte zum Eintragen.</p>
         <p id="counter" onclick="cherryMagic()" style="font-weight: bold; color: #27ae60; cursor: pointer;">
-    <span class="spinner"></span> Lade Standorte...
-</p>
+            <span class="spinner"></span> Lade Standorte...
+        </p>
     </div>
 
     <div id="map"></div>
     <div class="footer-links">
-        <a onclick="openAbout()">Über das Projekt</a> | 
+        <a onclick="openAbout()">Über das Projekt</a> |
         <a onclick="openImpressum()" oncontextmenu="checkAdminStatusManual(event)">Impressum & Datenschutz</a>
-        <span id="admin-logout-link" style="display:none;"> | <a onclick="adminLogout()" style="color: #e74c3c;">Abmelden</a></span>
+        <span id="admin-logout-link" style="display:none;"> | <a onclick="adminLogout()"
+                style="color: #e74c3c;">Abmelden</a></span>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -177,7 +243,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/lightgallery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/plugins/zoom/lg-zoom.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    
+
     <script>
         // --- 1. SETUP ---
         const SUPABASE_URL = 'https://kiorpmxzdjkpiihoixzk.supabase.co';
@@ -186,9 +252,9 @@
 
         // --- 2. ADMIN-LOGIK ---
         function binIchAdmin() { return localStorage.getItem('istAdmin') === 'true'; }
-        
+
         function checkAdminStatusManual(event) {
-            event.preventDefault(); 
+            event.preventDefault();
             const eingabe = prompt("Admin-Sperre: Bitte Passwort eingeben:");
             if (eingabe) {
                 const hashEingabe = CryptoJS.SHA256(eingabe.trim()).toString();
@@ -196,7 +262,7 @@
                 if (hashEingabe === korrekterHash) {
                     localStorage.setItem('istAdmin', 'true');
                     alert("Willkommen zurück, Admin! 🍒");
-                    location.reload(); 
+                    location.reload();
                 } else { alert("Zugriff verweigert."); }
             }
         }
@@ -216,7 +282,7 @@
             maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: 'Google'
         }).addTo(map);
 
-        map.on('moveend', function() {
+        map.on('moveend', function () {
             const center = map.getCenter();
             localStorage.setItem('lastPos', JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() }));
         });
@@ -230,36 +296,36 @@
         // Diese Funktion zeichnet eine einzelne Kirsche auf die Karte
         function addMarkerToMap(s) {
             let popupContent = `<div class="custom-popup"><b>${s.art}</b>`;
-            
+
             // Name des Entdeckers anzeigen, falls vorhanden
-            if (s.entdecker) { 
-                popupContent += `<i style="font-size:12px; color:gray;">Entdeckt von: ${s.entdecker}</i>`; 
+            if (s.entdecker) {
+                popupContent += `<i style="font-size:12px; color:gray;">Entdeckt von: ${s.entdecker}</i>`;
             }
-            
+
             // Notiz anzeigen, falls vorhanden
-            if (s.notiz) { 
-                popupContent += `<p style="font-size:14px; background:#f9f9f9; padding:8px; border-left:3px solid #27ae60; margin:10px 0; font-style:italic;">"${s.notiz}"</p>`; 
+            if (s.notiz) {
+                popupContent += `<p style="font-size:14px; background:#f9f9f9; padding:8px; border-left:3px solid #27ae60; margin:10px 0; font-style:italic;">"${s.notiz}"</p>`;
             }
-            
+
             // Bilder-Logik: Wir prüfen, ob es ein Array (fotos) oder eine einzelne URL (foto_url) gibt
             let bListe = s.fotos || [];
             if (bListe.length === 0 && s.foto_url) { bListe = [s.foto_url]; }
-            
+
             // Für jedes Foto einen Eintrag in der Galerie erstellen
             bListe.forEach(url => {
                 popupContent += `<div class="popup-gallery" data-src="${url}"><img src="${url}" alt="${s.art}"></div>`;
             });
-            
+
             // Buttons für Aktionen im Popup
             popupContent += `<button onclick="openPhotoUpload(${s.id})" style="background:#27ae60; margin-top:10px;">📷 Foto nachreichen</button>`;
-            
+
             // Lösch-Button nur für Admins sichtbar machen
-            if (binIchAdmin()) { 
-                popupContent += `<button onclick="deleteSichtung(${s.id})" style="background:#e74c3c;">🗑️ Eintrag löschen</button>`; 
+            if (binIchAdmin()) {
+                popupContent += `<button onclick="deleteSichtung(${s.id})" style="background:#e74c3c;">🗑️ Eintrag löschen</button>`;
             }
-            
+
             popupContent += `</div>`;
-            
+
             // Den Marker mit dem fertigen Popup auf die Karte setzen
             L.marker([s.lat, s.lng], { icon: cherryIcon, sichtungId: s.id })
                 .addTo(map)
@@ -281,7 +347,7 @@
                     .select('*', { count: 'exact' });
 
                 // Falls Supabase einen Fehler meldet, direkt zum 'catch' Block springen
-                if (error) throw error; 
+                if (error) throw error;
 
                 if (data) {
                     // 3. Karte aufräumen: Nur Marker mit 'sichtungId' entfernen
@@ -308,29 +374,31 @@
         loadSichtungen();
 
         // LightGallery initialisieren, sobald ein Popup geöffnet wird
-        map.on('popupopen', function() {
+        map.on('popupopen', function () {
             const galleryElements = document.querySelectorAll('.popup-gallery');
-            galleryElements.forEach(el => { 
-                if(window.lightGallery) { 
-                    lightGallery(el, { plugins: [lgZoom], speed: 500, download: false }); 
-                } 
+            galleryElements.forEach(el => {
+                if (window.lightGallery) {
+                    lightGallery(el, { plugins: [lgZoom], speed: 500, download: false });
+                }
             });
         });
 
         // --- 5. NEUER EINTRAG ---
         // --- 5. NEUER EINTRAG ---
-        map.on('click', function(e) {
+        map.on('click', function (e) {
             const lat = e.latlng.lat; const lng = e.latlng.lng;
             const gespeicherterName = localStorage.getItem('entdeckerName') || '';
             const formHtml = `
                 <div class="custom-popup" style="text-align: left;">
                     <h3 style="margin-top:0;">Sichtung eintragen</h3>
                     
-                    <label style="font-size:12px; color:#666;">Entdecker:</label>
-                    <input type="text" id="entdecker-input" value="${gespeicherterName}" placeholder="Dein Name (optional)" style="width:100%; padding:8px; box-sizing:border-box; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;">
-                    
-                    <label style="font-size:12px; color:#666;">Notizen / Zustand:</label>
-                    <textarea id="notiz-input" placeholder="z.B. schwer erreichbar, noch sauer..." style="width:100%; height:60px; padding:8px; box-sizing:border-box; margin-bottom:10px; border:1px solid #ccc; border-radius:4px; font-family:sans-serif;"></textarea>
+                    <label style="font-size:12px; color:#666; font-family:sans-serif;">Entdecker:</label>
+                    <input type="text" id="entdecker-input" value="${gespeicherterName}" placeholder="Dein Name (optional)" 
+                        style="width:100%; padding:8px; font-family:sans-serif; font-size:14px; border:1px solid #ccc; border-radius:4px; margin-bottom:10px;">
+
+                    <label style="font-size:12px; color:#666; font-family:sans-serif;">Notizen / Zustand:</label>
+                    <textarea id="notiz-input" placeholder="z.B. schwer erreichbar..." 
+                        style="width:100%; height:60px; padding:8px; font-family:sans-serif; font-size:14px; border:1px solid #ccc; border-radius:4px; margin-bottom:10px;"></textarea>
                     
                     <label style="font-size:12px; color:#666;">Größe des Bestands:</label>
                     <select id="size" style="width:100%; padding:8px; box-sizing:border-box; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;">
@@ -362,7 +430,7 @@
                     const reader = new FileReader();
                     reader.onloadend = () => {
                         const img = document.createElement('img');
-                        img.src = reader.result; img.style.width = '60px'; img.style.height = '60px'; 
+                        img.src = reader.result; img.style.width = '60px'; img.style.height = '60px';
                         img.style.objectFit = 'cover'; img.style.borderRadius = '4px'; img.style.margin = '2px';
                         previewContainer.appendChild(img);
                     }
@@ -377,14 +445,14 @@
             // Wichtig: Die Notiz auslesen, BEVOR wir speichern
             const notizText = document.getElementById('notiz-input').value;
             localStorage.setItem('entdeckerName', document.getElementById('entdecker-input').value);
-            
+
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span> Verarbeite Bilder...';
-            
+
             let finalImageUrls = [];
             for (let i = 0; i < files.length; i++) {
                 btn.innerHTML = `<span class="spinner"></span> Bild ${i + 1}/${files.length}...`;
-                await new Promise(r => setTimeout(r, 50)); 
+                await new Promise(r => setTimeout(r, 50));
                 const resizedBlob = await resizeImage(files[i], 1600, 1600);
                 const fileName = Date.now() + "_" + Math.floor(Math.random() * 1000000) + ".jpg";
                 const { error } = await supabaseClient.storage.from('pflanzenfotos').upload(fileName, resizedBlob);
@@ -393,26 +461,26 @@
                     finalImageUrls.push(data.publicUrl);
                 }
             }
-            
+
             btn.innerHTML = '<span class="spinner"></span> Finalisiere...';
-            
-            const { error: dbError } = await supabaseClient.from('sichtungen').insert([{ 
-                lat, lng, 
-                art: document.getElementById('size').value, 
-                entdecker: localStorage.getItem('entdeckerName'), 
-                fotos: finalImageUrls, 
+
+            const { error: dbError } = await supabaseClient.from('sichtungen').insert([{
+                lat, lng,
+                art: document.getElementById('size').value,
+                entdecker: localStorage.getItem('entdeckerName'),
+                fotos: finalImageUrls,
                 foto_url: finalImageUrls[0] || null,
-                notiz: notizText 
+                notiz: notizText
             }]);
 
-            if (!dbError) { 
-                alert("Gespeichert! 🍒"); 
-                map.closePopup(); 
-                loadSichtungen(); 
-            } else { 
-                alert("Fehler beim Speichern!"); 
-                btn.disabled = false; 
-                btn.innerText = "Speichern"; 
+            if (!dbError) {
+                alert("Gespeichert! 🍒");
+                map.closePopup();
+                loadSichtungen();
+            } else {
+                alert("Fehler beim Speichern!");
+                btn.disabled = false;
+                btn.innerText = "Speichern";
             }
         }
 
@@ -472,63 +540,63 @@
         }
 
         // 1. Die Funktion muss GANZ oben (oder zumindest vor dem Button) klar definiert sein
-        function locateMe() { 
-            console.log("GPS Button aktiv - starte Suche..."); 
-            
+        function locateMe() {
+            console.log("GPS Button aktiv - starte Suche...");
+
             // 1. Eventuelle laufende Suchen stoppen
-            map.stopLocate(); 
+            map.stopLocate();
 
             // 2. Neu suchen mit hoher Priorität
             map.locate({
-                setView: true, 
+                setView: true,
                 maxZoom: 16,
                 enableHighAccuracy: true // Erzwingt präziseres GPS
-            }); 
+            });
         }
-            // 2. Den Nutzer-Kreis zeichnen, wenn Position gefunden wurde
-            // A) Wenn die Position ERFOLGREICH gefunden wurde
-map.on('locationfound', (e) => { 
-    // Erstmal alle alten blauen Kreise entfernen
-    map.eachLayer(layer => {
-        if (layer instanceof L.Circle && layer.options.color === '#3498db') {
-            map.removeLayer(layer);
-        }
-    });
+        // 2. Den Nutzer-Kreis zeichnen, wenn Position gefunden wurde
+        // A) Wenn die Position ERFOLGREICH gefunden wurde
+        map.on('locationfound', (e) => {
+            // Erstmal alle alten blauen Kreise entfernen
+            map.eachLayer(layer => {
+                if (layer instanceof L.Circle && layer.options.color === '#3498db') {
+                    map.removeLayer(layer);
+                }
+            });
 
-    // Neuen blauen Kreis zeichnen
-    L.circle(e.latlng, {
-        radius: e.accuracy / 2,
-        interactive: false,
-        color: '#3498db',
-        fillColor: '#3498db',
-        fillOpacity: 0.15
-    }).addTo(map); 
-});
+            // Neuen blauen Kreis zeichnen
+            L.circle(e.latlng, {
+                radius: e.accuracy / 2,
+                interactive: false,
+                color: '#3498db',
+                fillColor: '#3498db',
+                fillOpacity: 0.15
+            }).addTo(map);
+        });
 
-// B) Wenn es einen FEHLER gab (z.B. GPS am Handy aus)
-map.on('locationerror', (e) => {
-    console.error("GPS Fehler:", e.message);
-    // Wir zeigen die Meldung nur, wenn der Fehler nicht "Permission Denied" beim automatischen Start war
-    // Sonst nervt das Popup bei jedem Seitenaufruf, wenn jemand GPS deaktiviert hat.
-    if (e.message !== "Geolocation error: User denied Geolocation.") {
-        alert("Standort konnte nicht gefunden werden. Bitte prüfe deine GPS-Einstellungen.");
-    }
-});
+        // B) Wenn es einen FEHLER gab (z.B. GPS am Handy aus)
+        map.on('locationerror', (e) => {
+            console.error("GPS Fehler:", e.message);
+            // Wir zeigen die Meldung nur, wenn der Fehler nicht "Permission Denied" beim automatischen Start war
+            // Sonst nervt das Popup bei jedem Seitenaufruf, wenn jemand GPS deaktiviert hat.
+            if (e.message !== "Geolocation error: User denied Geolocation.") {
+                alert("Standort konnte nicht gefunden werden. Bitte prüfe deine GPS-Einstellungen.");
+            }
+        });
 
-                // 3. Den Button erstellen
+        // 3. Den Button erstellen
         const CustomLocate = L.Control.extend({
             options: { position: 'bottomright' },
-            onAdd: function(map) {
+            onAdd: function (map) {
                 const div = L.DomUtil.create('div', 'leaflet-control-locate');
                 div.innerHTML = '📍';
-                
+
                 // Leaflet-eigene Klick-Methode nutzen (das ist sicherer!)
-                L.DomEvent.on(div, 'click', function(e) {
+                L.DomEvent.on(div, 'click', function (e) {
                     L.DomEvent.stopPropagation(e);
                     L.DomEvent.preventDefault(e);
                     locateMe();
                 });
-                
+
                 return div;
             }
         });
@@ -618,4 +686,5 @@ map.on('locationerror', (e) => {
         }
     </script>
 </body>
+
 </html>
