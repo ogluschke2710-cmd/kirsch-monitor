@@ -2,7 +2,6 @@
 
 ## 🟡 P1: User Experience "Im Feld" (Next Steps)
 - [ ] Bildergalerie verbessern: Scrollbar/Wischen bei mehreren Bildern (Vorschau-System)
-- [ ] Favicon erstellen Die Kirsche als echtes App-Icon für Homescreen & Desktop.
 
 ## 🟢 P2: Features & Design (Zukunft)
 - [ ] Sidebar/Top-Bar schlanker machen (ausblendbar/scrollbar)
@@ -25,6 +24,7 @@
 - [x] Zoom-Buttons am Handy fixen (überlagern GPS-Button)
 - [x] Spinner / Lade-Animation fixen (funktioniert anscheinend nicht)
 - [x] Pop-Up Notizen und Entdecker sollten gleiche Schriftart und Größe haben
+- [x] Favicon erstellen Die Kirsche als echtes App-Icon für Homescreen & Desktop.
 
 ---
 *Zuletzt aktualisiert: Freitagabend, 27.03.2026*
