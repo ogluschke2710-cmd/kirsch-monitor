@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kornelkirschen-Monitor v3.3</title>
+    <title>Kornelkirschen-Monitor v3.4</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery.min.css" />
@@ -118,8 +118,8 @@
         <h2 style="margin:0">🍒 Kornelkirschen-Map</h2>
         <p>Klicke auf die Karte zum Eintragen.</p>
         <p id="counter" onclick="cherryMagic()" style="font-weight: bold; color: #27ae60; cursor: pointer;">
-            <span class="spinner"></span> Lade Standorte...
-        </p>
+    <span class="spinner"></span> Lade Standorte...
+</p>
     </div>
 
     <div id="map"></div>
@@ -194,41 +194,90 @@
         });
 
         // --- 4. MARKER & LADEN ---
+
+        // Diese Funktion zeichnet eine einzelne Kirsche auf die Karte
         function addMarkerToMap(s) {
             let popupContent = `<div class="custom-popup"><b>${s.art}</b>`;
-            if (s.entdecker) { popupContent += `<i style="font-size:12px; color:gray;">Entdeckt von: ${s.entdecker}</i>`; }
+            
+            // Name des Entdeckers anzeigen, falls vorhanden
+            if (s.entdecker) { 
+                popupContent += `<i style="font-size:12px; color:gray;">Entdeckt von: ${s.entdecker}</i>`; 
+            }
+            
+            // Bilder-Logik: Wir prüfen, ob es ein Array (fotos) oder eine einzelne URL (foto_url) gibt
             let bListe = s.fotos || [];
             if (bListe.length === 0 && s.foto_url) { bListe = [s.foto_url]; }
+            
+            // Für jedes Foto einen Eintrag in der Galerie erstellen
             bListe.forEach(url => {
                 popupContent += `<div class="popup-gallery" data-src="${url}"><img src="${url}" alt="${s.art}"></div>`;
             });
+            
+            // Buttons für Aktionen im Popup
             popupContent += `<button onclick="openPhotoUpload(${s.id})" style="background:#27ae60; margin-top:10px;">📷 Foto nachreichen</button>`;
-            if (binIchAdmin()) { popupContent += `<button onclick="deleteSichtung(${s.id})" style="background:#e74c3c;">🗑️ Eintrag löschen</button>`; }
+            
+            // Lösch-Button nur für Admins sichtbar machen
+            if (binIchAdmin()) { 
+                popupContent += `<button onclick="deleteSichtung(${s.id})" style="background:#e74c3c;">🗑️ Eintrag löschen</button>`; 
+            }
+            
             popupContent += `</div>`;
-            L.marker([s.lat, s.lng], { icon: cherryIcon, sichtungId: s.id }).addTo(map).bindPopup(popupContent);
+            
+            // Den Marker mit dem fertigen Popup auf die Karte setzen
+            L.marker([s.lat, s.lng], { icon: cherryIcon, sichtungId: s.id })
+                .addTo(map)
+                .bindPopup(popupContent);
         }
 
+        // Hauptfunktion zum Laden aller Standorte aus der Datenbank
         async function loadSichtungen() {
             const counterElement = document.getElementById('counter');
-            // Spinner zeigen beim Start
+            if (!counterElement) return;
+
+            // 1. Visuelles Feedback: Spinner starten
             counterElement.innerHTML = '<span class="spinner"></span> Suche Kirschen...';
-            
-            const { data, error, count } = await supabaseClient.from('sichtungen').select('*', { count: 'exact' });
-            
-            if (!error && data) { 
-                map.eachLayer(layer => { if (layer instanceof L.Marker && layer.options.sichtungId) map.removeLayer(layer); });
-                data.forEach(s => addMarkerToMap(s)); 
-                // Spinner erst jetzt entfernen
-                counterElement.innerText = `Aktuell ${count || 0} Standorte markiert`; 
-            } else {
-                counterElement.innerText = "Fehler beim Laden";
+
+            try {
+                // 2. Datenbank-Abfrage an Supabase senden
+                const { data, error, count } = await supabaseClient
+                    .from('sichtungen')
+                    .select('*', { count: 'exact' });
+
+                // Falls Supabase einen Fehler meldet, direkt zum 'catch' Block springen
+                if (error) throw error; 
+
+                if (data) {
+                    // 3. Karte aufräumen: Nur Marker mit 'sichtungId' entfernen
+                    map.eachLayer(layer => {
+                        if (layer instanceof L.Marker && layer.options.sichtungId) {
+                            map.removeLayer(layer);
+                        }
+                    });
+
+                    // 4. Daten verarbeiten: Jeden Eintrag aus der DB als Marker zeichnen
+                    data.forEach(s => addMarkerToMap(s));
+
+                    // 5. Erfolg: Spinner durch die echte Anzahl ersetzen
+                    counterElement.innerText = `Aktuell ${count || 0} Standorte markiert`;
+                }
+            } catch (err) {
+                // Fehlerbehandlung: Spinner stoppen und Nachricht anzeigen
+                console.error("Fehler beim Laden:", err);
+                counterElement.innerText = "Fehler beim Laden der Kirschen.";
             }
         }
+
+        // Die Funktion direkt beim Start der Seite einmal ausführen
         loadSichtungen();
 
+        // LightGallery initialisieren, sobald ein Popup geöffnet wird
         map.on('popupopen', function() {
             const galleryElements = document.querySelectorAll('.popup-gallery');
-            galleryElements.forEach(el => { if(window.lightGallery) { lightGallery(el, { plugins: [lgZoom], speed: 500, download: false }); } });
+            galleryElements.forEach(el => { 
+                if(window.lightGallery) { 
+                    lightGallery(el, { plugins: [lgZoom], speed: 500, download: false }); 
+                } 
+            });
         });
 
         // --- 5. NEUER EINTRAG ---
