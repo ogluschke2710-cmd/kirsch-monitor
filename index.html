@@ -63,57 +63,50 @@
 
         /* --- BUTTON-STEUERUNG (ZOOM & GPS) --- */
 
-        /* GPS Button Styling (wieder schick machen) */
+        /* Das Design des GPS-Buttons */
         .leaflet-control-locate {
-            background: white;
-            width: 34px;
-            height: 34px;
-            line-height: 34px;
-            text-align: center;
+            background: white !important;
+            width: 34px !important;
+            height: 34px !important;
             cursor: pointer;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-            border-radius: 5px;
-            border: 2px solid rgba(0,0,0,0.2);
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4) !important;
+            border-radius: 4px !important;
+            border: 2px solid rgba(0,0,0,0.2) !important;
             font-size: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
+            margin-right: 10px !important; /* Abstand zum rechten Rand */
         }
 
         /* A) DESKTOP ANSICHT */
         @media (min-width: 769px) {
             .leaflet-control-locate {
-                position: absolute !important;
-                bottom: 20px !important;
-                right: 10px !important;
+                margin-bottom: 10px !important; /* Abstand zu den Zoom-Buttons darüber */
             }
             .leaflet-control-zoom { 
-                margin-bottom: 70px !important; 
+                margin-bottom: 20px !important; 
             }
         }
 
         /* B) MOBILE ANSICHT (Handys) */
         @media (max-width: 768px) {
-            /* GPS Button über die Zoom Buttons setzen */
-            .leaflet-control-locate {
-                position: fixed !important;
-                bottom: 110px !important; /* Über dem Zoom-In (+) Button */
-                right: 12px !important;
-                z-index: 1001;
-            }
-            /* Zoom Buttons bleiben rechts unten */
-            .leaflet-bottom.leaflet-right .leaflet-control-zoom {
+            /* Wir lassen Leaflet sie stapeln, schieben aber die ganze Gruppe hoch */
+            .leaflet-bottom.leaflet-right {
                 margin-bottom: 20px !important;
-                margin-right: 12px !important;
+                margin-right: 2px !important;
             }
-            /* Footer-Links links lassen */
+
+            .leaflet-control-locate {
+                margin-bottom: 10px !important;
+            }
+
             .footer-links {
                 bottom: 10px !important;
                 left: 10px !important;
                 max-width: 60%;
+                background: rgba(255, 255, 255, 0.9) !important; /* Etwas blickdichter am Handy */
             }
-            /* Leaflet Info ausblenden für Platz */
-            .leaflet-control-attribution { display: none !important; }
         }
     </style>
 </head>
@@ -167,17 +160,17 @@
         const lastPos = JSON.parse(localStorage.getItem('lastPos')) || { lat: 52.5200, lng: 13.4050, zoom: 13 };
         const map = L.map('map', { zoomControl: false }).setView([lastPos.lat, lastPos.lng], lastPos.zoom);
         
+        // 1. Zuerst Zoom-Steuerung hinzufügen
         L.control.zoom({ position: 'bottomright' }).addTo(map);
         
-        // Custom GPS Button hinzufügen
+        // 2. Dann Custom GPS Button hinzufügen (landet automatisch darunter)
         const CustomLocate = L.Control.extend({
             options: { position: 'bottomright' },
             onAdd: function() {
                 const div = L.DomUtil.create('div', 'leaflet-control-locate');
                 div.innerHTML = '📍';
-                div.title = "Mein Standort";
                 div.onclick = function(e) {
-                    e.stopPropagation();
+                    L.DomEvent.stopPropagation(e); // Verhindert Klicks auf die Karte
                     locateMe();
                 };
                 return div;
