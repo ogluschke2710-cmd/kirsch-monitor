@@ -85,26 +85,35 @@
 
         /* B) MOBILE ANSICHT (Handys) */
         @media (max-width: 768px) {
-            /* GPS Button nach LINKS UNTEN zwingen */
+            /* 1. Der GPS Button kommt nach RECHTS unten */
             .leaflet-control-locate, .gps-btn {
                 position: fixed !important;
-                bottom: 25px !important; /* Etwas höher wegen Browser-Leisten */
-                left: 15px !important; 
-                right: auto !important; /* Rechts-Position abschalten! */
+                bottom: 20px !important;
+                right: 15px !important; /* Wieder nach rechts */
+                left: auto !important; 
                 margin: 0 !important;
                 z-index: 1001;
             }
 
-            /* Zoom Buttons RECHTS UNTEN lassen */
+            /* 2. Die Zoom Buttons schieben wir ein STÜCK HÖHER */
+            /* So sitzen sie genau über dem GPS Button, ohne ihn zu berühren */
             .leaflet-bottom.leaflet-right .leaflet-control-zoom {
-                margin-bottom: 25px !important;
+                margin-bottom: 80px !important; /* 80px ist genug Platz für den GPS-Button darunter */
                 margin-right: 15px !important;
             }
 
-            /* Attribution (Text unten rechts) verkleinern, damit Platz ist */
+            /* 3. Footer Links (Impressum etc.) */
+            /* Wir sorgen dafür, dass sie links bleiben, aber nicht vom GPS Button verdeckt werden */
+            .footer-links {
+                bottom: 5px !important;
+                left: 5px !important;
+                max-width: 150px; /* Schmaler, damit sie nicht in die Buttons rechts ragen */
+                line-height: 1.4;
+            }
+
+            /* 4. Google/Leaflet Info ganz klein machen */
             .leaflet-control-attribution {
-                font-size: 9px !important;
-                max-width: 60%;
+                display: none !important; /* Am Handy meistens Platzverschwendung, wir lassen nur dein Impressum wirken */
             }
         }
     </style>
