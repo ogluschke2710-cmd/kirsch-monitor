@@ -1,5 +1,8 @@
 # 🍒 Kornelkirschen-Monitor Roadmap
 
+## 🔴 P0: Kritisch wegen Datenschutz
+- [ ] Netlify updaten, sobald Limit wieder frei
+
 ## 🟡 P1: User Experience "Im Feld" (Next Steps)
 - [ ] Bildergalerie verbessern: Scrollbar/Wischen bei mehreren Bildern (Vorschau-System)
 
