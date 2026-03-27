@@ -9,10 +9,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lg-zoom.min.css" />
     
-    <style>
+<style>
+        /* --- ALLGEMEINES LAYOUT --- */
         body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
         #map { height: 100vh; width: 100%; }
         
+        /* --- SIDEBAR / TOPBAR OBEN LINKS --- */
         .sidebar-info {
             position: absolute; top: 10px; left: 10px; z-index: 1000;
             background: white; padding: 10px; border: 2px solid #333;
@@ -20,20 +22,14 @@
             max-width: 300px;
         }
 
-        .gps-btn {
-            position: absolute; bottom: 20px; right: 10px; z-index: 1000;
-            background: white; border: 2px solid #333; cursor: pointer; 
-            border-radius: 4px; width: 34px; height: 34px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-        }
-
+        /* Responsive Anpassung für sehr kleine Bildschirme */
         @media (max-width: 600px) {
             .sidebar-info { top: 5px; left: 5px; right: 5px; max-width: none; padding: 8px; }
             .sidebar-info h2 { font-size: 16px; }
             .sidebar-info p { font-size: 13px; margin: 3px 0; }
         }
 
+        /* --- POPUPS AUF DER KARTE --- */
         .custom-popup { font-size: 16px; width: 280px; text-align: center; }
         .custom-popup b { display: block; margin-bottom: 5px; text-transform: capitalize; }
         .custom-popup img { 
@@ -46,7 +42,9 @@
             cursor: pointer; margin-top: 10px; font-weight: bold; border-radius: 4px;
         }
 
+        /* --- MARKER & FOOTER --- */
         .cherry-emoji-marker { font-size: 24px; display: flex; justify-content: center; align-items: center; }
+        
         .footer-links {
             position: absolute; bottom: 10px; left: 10px; z-index: 1000;
             font-size: 12px; background: rgba(255,255,255,0.7); padding: 2px 5px;
@@ -54,6 +52,7 @@
         }
         .footer-links a { color: #333; text-decoration: none; cursor: pointer; }
 
+        /* --- LADE-SPINNER --- */
         .spinner {
             display: inline-block; width: 14px; height: 14px;
             border: 2px solid rgba(39, 174, 96, 0.3);
@@ -65,45 +64,49 @@
 
         #photo-input-preview { display: none; flex-wrap: wrap; gap: 5px; justify-content: center; margin: 10px 0; }
 
-        /* Fix für die Buttons am Handy */
-/* Nur für große Bildschirme (Desktop) */
-@media (min-width: 769px) {
-    .leaflet-control-zoom { 
-        margin-bottom: 70px !important; 
-    }
-}
+        /* --- BUTTON-STEUERUNG (ZOOM & GPS) --- */
 
-/* 1. Desktop: Alles bleibt wie gewohnt rechts */
-@media (min-width: 769px) {
-    .leaflet-control-zoom { 
-        margin-bottom: 70px !important; 
-    }
-}
+        /* A) DESKTOP ANSICHT (Ab 769px Breite) */
+        @media (min-width: 769px) {
+            /* GPS Button rechts unten */
+            .leaflet-control-locate, .gps-btn {
+                position: absolute !important;
+                bottom: 20px !important;
+                right: 10px !important;
+                left: auto !important; /* Sicherstellen, dass er nicht links klebt */
+                margin: 0 !important;
+                z-index: 1000;
+            }
+            /* Zoom Buttons etwas über den GPS Button schieben */
+            .leaflet-control-zoom { 
+                margin-bottom: 70px !important; 
+            }
+        }
 
-/* 2. Handy: GPS nach links, Zoom nach rechts unten */
-@media (max-width: 768px) {
-    /* Wir erzwingen, dass der GPS-Button nach LINKS wandert */
-    .leaflet-control-locate {
-        position: fixed !important;
-        bottom: 20px !important;
-        left: 10px !important; /* Hier schieben wir ihn nach links! */
-        margin: 0 !important;
-        z-index: 1000;
-    }
+        /* B) MOBILE ANSICHT (Handys) */
+        @media (max-width: 768px) {
+            /* GPS Button nach LINKS UNTEN zwingen */
+            .leaflet-control-locate, .gps-btn {
+                position: fixed !important;
+                bottom: 25px !important; /* Etwas höher wegen Browser-Leisten */
+                left: 15px !important; 
+                right: auto !important; /* Rechts-Position abschalten! */
+                margin: 0 !important;
+                z-index: 1001;
+            }
 
-    /* Die Zoom-Buttons bleiben rechts unten, aber ohne Murks */
-    .leaflet-bottom.leaflet-right .leaflet-control-zoom {
-        margin-bottom: 20px !important;
-        margin-right: 10px !important;
-    }
+            /* Zoom Buttons RECHTS UNTEN lassen */
+            .leaflet-bottom.leaflet-right .leaflet-control-zoom {
+                margin-bottom: 25px !important;
+                margin-right: 15px !important;
+            }
 
-    /* Wir verstecken die Leaflet-Attribution (das kleine Leaflet-Logo), 
-       damit es links unten nicht den GPS-Button überlagert, falls nötig */
-    .leaflet-control-attribution {
-        font-size: 8px !important;
-        background: rgba(255, 255, 255, 0.7) !important;
-    }
-}
+            /* Attribution (Text unten rechts) verkleinern, damit Platz ist */
+            .leaflet-control-attribution {
+                font-size: 9px !important;
+                max-width: 60%;
+            }
+        }
     </style>
 </head>
 <body>
