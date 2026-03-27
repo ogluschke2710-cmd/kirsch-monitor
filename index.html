@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lg-zoom.min.css" />
     
-<style>
+    <style>
         /* --- ALLGEMEINES LAYOUT --- */
         body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
         #map { height: 100vh; width: 100%; }
@@ -22,7 +22,6 @@
             max-width: 300px;
         }
 
-        /* Responsive Anpassung für sehr kleine Bildschirme */
         @media (max-width: 600px) {
             .sidebar-info { top: 5px; left: 5px; right: 5px; max-width: none; padding: 8px; }
             .sidebar-info h2 { font-size: 16px; }
@@ -47,10 +46,10 @@
         
         .footer-links {
             position: absolute; bottom: 10px; left: 10px; z-index: 1000;
-            font-size: 12px; background: rgba(255,255,255,0.7); padding: 2px 5px;
-            border-radius: 3px;
+            font-size: 12px; background: rgba(255,255,255,0.8); padding: 5px 8px;
+            border-radius: 4px; border: 1px solid #ccc;
         }
-        .footer-links a { color: #333; text-decoration: none; cursor: pointer; }
+        .footer-links a { color: #333; text-decoration: none; cursor: pointer; font-weight: bold; }
 
         /* --- LADE-SPINNER --- */
         .spinner {
@@ -62,22 +61,32 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        #photo-input-preview { display: none; flex-wrap: wrap; gap: 5px; justify-content: center; margin: 10px 0; }
-
         /* --- BUTTON-STEUERUNG (ZOOM & GPS) --- */
 
-        /* A) DESKTOP ANSICHT (Ab 769px Breite) */
+        /* GPS Button Styling (wieder schick machen) */
+        .leaflet-control-locate {
+            background: white;
+            width: 34px;
+            height: 34px;
+            line-height: 34px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+            border-radius: 5px;
+            border: 2px solid rgba(0,0,0,0.2);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* A) DESKTOP ANSICHT */
         @media (min-width: 769px) {
-            /* GPS Button rechts unten */
-            .leaflet-control-locate, .gps-btn {
+            .leaflet-control-locate {
                 position: absolute !important;
                 bottom: 20px !important;
                 right: 10px !important;
-                left: auto !important; /* Sicherstellen, dass er nicht links klebt */
-                margin: 0 !important;
-                z-index: 1000;
             }
-            /* Zoom Buttons etwas über den GPS Button schieben */
             .leaflet-control-zoom { 
                 margin-bottom: 70px !important; 
             }
@@ -85,36 +94,26 @@
 
         /* B) MOBILE ANSICHT (Handys) */
         @media (max-width: 768px) {
-            /* 1. Der GPS Button kommt nach RECHTS unten */
-            .leaflet-control-locate, .gps-btn {
+            /* GPS Button über die Zoom Buttons setzen */
+            .leaflet-control-locate {
                 position: fixed !important;
-                bottom: 20px !important;
-                right: 15px !important; /* Wieder nach rechts */
-                left: auto !important; 
-                margin: 0 !important;
+                bottom: 110px !important; /* Über dem Zoom-In (+) Button */
+                right: 12px !important;
                 z-index: 1001;
             }
-
-            /* 2. Die Zoom Buttons schieben wir ein STÜCK HÖHER */
-            /* So sitzen sie genau über dem GPS Button, ohne ihn zu berühren */
+            /* Zoom Buttons bleiben rechts unten */
             .leaflet-bottom.leaflet-right .leaflet-control-zoom {
-                margin-bottom: 80px !important; /* 80px ist genug Platz für den GPS-Button darunter */
-                margin-right: 15px !important;
+                margin-bottom: 20px !important;
+                margin-right: 12px !important;
             }
-
-            /* 3. Footer Links (Impressum etc.) */
-            /* Wir sorgen dafür, dass sie links bleiben, aber nicht vom GPS Button verdeckt werden */
+            /* Footer-Links links lassen */
             .footer-links {
-                bottom: 5px !important;
-                left: 5px !important;
-                max-width: 150px; /* Schmaler, damit sie nicht in die Buttons rechts ragen */
-                line-height: 1.4;
+                bottom: 10px !important;
+                left: 10px !important;
+                max-width: 60%;
             }
-
-            /* 4. Google/Leaflet Info ganz klein machen */
-            .leaflet-control-attribution {
-                display: none !important; /* Am Handy meistens Platzverschwendung, wir lassen nur dein Impressum wirken */
-            }
+            /* Leaflet Info ausblenden für Platz */
+            .leaflet-control-attribution { display: none !important; }
         }
     </style>
 </head>
@@ -123,17 +122,17 @@
     <div class="sidebar-info">
         <h2 style="margin:0">🍒 Kornelkirschen-Map</h2>
         <p>Klicke auf die Karte zum Eintragen.</p>
-        <p id="counter" onclick="cherryMagic()" style="font-weight: bold; color: #27ae60; cursor: pointer;">Lade Standorte...</p>
+        <p id="counter" onclick="cherryMagic()" style="font-weight: bold; color: #27ae60; cursor: pointer;">
+            <span class="spinner"></span> Lade Standorte...
+        </p>
     </div>
 
     <div id="map"></div>
-    <div class="gps-btn" onclick="locateMe()" title="Mein Standort">📍</div>
-
     <div class="footer-links">
-    <a onclick="openAbout()">Über das Projekt</a> | 
-    <a onclick="openImpressum()" oncontextmenu="checkAdminStatusManual(event)">Impressum & Datenschutz</a>
-    <span id="admin-logout-link" style="display:none;"> | <a onclick="adminLogout()" style="color: #e74c3c;">Abmelden</a></span>
-</div>
+        <a onclick="openAbout()">Über das Projekt</a> | 
+        <a onclick="openImpressum()" oncontextmenu="checkAdminStatusManual(event)">Impressum & Datenschutz</a>
+        <span id="admin-logout-link" style="display:none;"> | <a onclick="adminLogout()" style="color: #e74c3c;">Abmelden</a></span>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -148,27 +147,8 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- 2. ADMIN-LOGIK ---
-        function checkAdminStatus() {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('login')) {
-                const eingabe = prompt("Bitte Admin-Passwort eingeben:");
-                if (eingabe) {
-                    const hashEingabe = CryptoJS.SHA256(eingabe.trim()).toString();
-                    const korrekterHash = "ca3b43fcb382fb262d183a3e8a1121a040d77e634d5041e18d26d8e0555417cd";
-                    if (hashEingabe === korrekterHash) {
-                        localStorage.setItem('istAdmin', 'true');
-                        alert("ERFOLG! Admin-Modus aktiviert. 🍒");
-                    } else {
-                        alert("FALSCH!");
-                    }
-                }
-                window.location.href = window.location.pathname; 
-            }
-        }
-        checkAdminStatus();
-
         function binIchAdmin() { return localStorage.getItem('istAdmin') === 'true'; }
-
+        
         function checkAdminStatusManual(event) {
             event.preventDefault(); 
             const eingabe = prompt("Admin-Sperre: Bitte Passwort eingeben:");
@@ -179,30 +159,39 @@
                     localStorage.setItem('istAdmin', 'true');
                     alert("Willkommen zurück, Admin! 🍒");
                     location.reload(); 
-                } else {
-                    alert("Zugriff verweigert.");
-                }
+                } else { alert("Zugriff verweigert."); }
             }
         }
 
         // --- 3. KARTEN SETUP ---
-        // Letzte Position aus Speicher laden oder Standard (Berlin)
         const lastPos = JSON.parse(localStorage.getItem('lastPos')) || { lat: 52.5200, lng: 13.4050, zoom: 13 };
-        
         const map = L.map('map', { zoomControl: false }).setView([lastPos.lat, lastPos.lng], lastPos.zoom);
+        
         L.control.zoom({ position: 'bottomright' }).addTo(map);
+        
+        // Custom GPS Button hinzufügen
+        const CustomLocate = L.Control.extend({
+            options: { position: 'bottomright' },
+            onAdd: function() {
+                const div = L.DomUtil.create('div', 'leaflet-control-locate');
+                div.innerHTML = '📍';
+                div.title = "Mein Standort";
+                div.onclick = function(e) {
+                    e.stopPropagation();
+                    locateMe();
+                };
+                return div;
+            }
+        });
+        map.addControl(new CustomLocate());
+
         L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: 'Google'
         }).addTo(map);
 
-        // Jedes Mal wenn die Karte bewegt wird: Position merken
         map.on('moveend', function() {
             const center = map.getCenter();
-            localStorage.setItem('lastPos', JSON.stringify({ 
-                lat: center.lat, 
-                lng: center.lng, 
-                zoom: map.getZoom() 
-            }));
+            localStorage.setItem('lastPos', JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() }));
         });
 
         const cherryIcon = L.divIcon({
@@ -226,12 +215,18 @@
 
         async function loadSichtungen() {
             const counterElement = document.getElementById('counter');
-            if (counterElement) { counterElement.innerHTML = '<span class="spinner"></span> Suche Kirschen...'; }
+            // Spinner zeigen beim Start
+            counterElement.innerHTML = '<span class="spinner"></span> Suche Kirschen...';
+            
             const { data, error, count } = await supabaseClient.from('sichtungen').select('*', { count: 'exact' });
+            
             if (!error && data) { 
                 map.eachLayer(layer => { if (layer instanceof L.Marker && layer.options.sichtungId) map.removeLayer(layer); });
                 data.forEach(s => addMarkerToMap(s)); 
-                if (counterElement) { counterElement.innerText = `Aktuell ${count || 0} Standorte markiert`; }
+                // Spinner erst jetzt entfernen
+                counterElement.innerText = `Aktuell ${count || 0} Standorte markiert`; 
+            } else {
+                counterElement.innerText = "Fehler beim Laden";
             }
         }
         loadSichtungen();
@@ -248,28 +243,19 @@
             const formHtml = `
                 <div class="custom-popup" style="text-align: left;">
                     <h3 style="margin-top:0;">Sichtung eintragen</h3>
-                    
                     <label style="font-size:12px; color:#666;">Entdecker:</label>
                     <input type="text" id="entdecker-input" value="${gespeicherterName}" placeholder="Dein Name (optional)" style="width:100%; padding:8px; box-sizing:border-box; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;">
-                    
                     <label style="font-size:12px; color:#666;">Größe des Bestands:</label>
                     <select id="size" style="width:100%; padding:8px; box-sizing:border-box; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;">
-                        <option value="sträuchchen">Sträuchchen</option>
-                        <option value="strauch">Strauch</option>
-                        <option value="heckenpflanze">Heckenpflanze</option>
-                        <option value="hochstrauch">Hochstrauch</option>
-                        <option value="baum">Baum</option>
+                        <option value="sträuchchen">Sträuchchen</option><option value="strauch">Strauch</option><option value="heckenpflanze">Heckenpflanze</option><option value="hochstrauch">Hochstrauch</option><option value="baum">Baum</option>
                     </select>
-                    
                     <label style="font-size:12px; color:#666;">Fotos hinzufügen:</label>
                     <input type="file" id="photo-input" accept="image/*" onchange="previewFile()" multiple style="width:100%; margin-bottom:10px;">
                     <div id="photo-input-preview" style="margin-bottom:10px;"></div>
-                    
                     <p style="font-size: 10px; color: #7f8c8d; line-height: 1.2; margin-bottom: 12px; border-top: 1px solid #eee; padding-top: 8px;">
                         Hinweis: Mit dem Speichern erklärst du dich einverstanden, dass Standort, Name und Foto öffentlich auf der Karte angezeigt werden.
                     </p>
-
-                    <button id="save-btn" onclick="saveAll(${lat}, ${lng})" style="background:#2c3e50; color:white; width:100%; padding:12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:14px;">Speichern</button>
+                    <button id="save-btn" onclick="saveAll(${lat}, ${lng})" style="background:#2c3e50; color:white; width:100%; padding:12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Speichern</button>
                 </div>`;
             L.popup().setLatLng(e.latlng).setContent(formHtml).openOn(map);
         });
@@ -278,13 +264,13 @@
             const previewContainer = document.getElementById('photo-input-preview');
             const files = document.getElementById('photo-input').files;
             previewContainer.innerHTML = ''; previewContainer.style.display = 'flex';
-            if (files && files.length > 0) {
+            if (files) {
                 [...files].forEach(file => {
                     const reader = new FileReader();
                     reader.onloadend = () => {
                         const img = document.createElement('img');
                         img.src = reader.result; img.style.width = '60px'; img.style.height = '60px'; 
-                        img.style.objectFit = 'cover'; img.style.borderRadius = '4px'; img.style.border = '1px solid #ddd';
+                        img.style.objectFit = 'cover'; img.style.borderRadius = '4px'; img.style.margin = '2px';
                         previewContainer.appendChild(img);
                     }
                     reader.readAsDataURL(file);
@@ -300,7 +286,6 @@
             let finalImageUrls = [];
             for (let i = 0; i < files.length; i++) {
                 btn.innerText = `Bild ${i + 1}/${files.length}...`;
-                // Text-Refresh erzwingen
                 await new Promise(r => setTimeout(r, 50)); 
                 const resizedBlob = await resizeImage(files[i], 1600, 1600);
                 const fileName = Date.now() + "_" + Math.floor(Math.random() * 1000000) + ".jpg";
@@ -320,14 +305,8 @@
             else { alert("Fehler!"); btn.disabled = false; btn.innerText = "Speichern"; }
         }
 
-        // --- 6. FOTOS NACHREICHEN ---
         function openPhotoUpload(id) {
-            const uploadHtml = `
-                <div class="custom-popup">
-                    <h3>Fotos nachreichen</h3>
-                    <input type="file" id="extra-photo-input" accept="image/*" multiple><br><br>
-                    <button id="extra-save-btn" onclick="uploadExtraPhotos(${id})" style="background:#27ae60;">Hochladen</button>
-                </div>`;
+            const uploadHtml = `<div class="custom-popup"><h3>Fotos nachreichen</h3><input type="file" id="extra-photo-input" accept="image/*" multiple><br><br><button id="extra-save-btn" onclick="uploadExtraPhotos(${id})" style="background:#27ae60;">Hochladen</button></div>`;
             L.popup().setLatLng(map.getCenter()).setContent(uploadHtml).openOn(map);
         }
 
@@ -341,7 +320,6 @@
                 let currentPhotos = sichtung.fotos || [];
                 for (let i = 0; i < files.length; i++) {
                     btn.innerText = `Bild ${i + 1}/${files.length}...`;
-                    await new Promise(r => setTimeout(r, 50)); 
                     const resizedBlob = await resizeImage(files[i], 1600, 1600);
                     const fileName = Date.now() + "_" + Math.floor(Math.random() * 1000000) + ".jpg";
                     const { error } = await supabaseClient.storage.from('pflanzenfotos').upload(fileName, resizedBlob);
@@ -355,7 +333,6 @@
             } catch (e) { alert("Fehler!"); btn.disabled = false; }
         }
 
-        // --- 7. HELPER & LÖSCHEN ---
         async function deleteSichtung(id) {
             if (confirm("Wirklich löschen?")) {
                 const { error } = await supabaseClient.from('sichtungen').delete().eq('id', id);
@@ -384,77 +361,19 @@
         }
 
         function locateMe() { map.locate({setView: true, maxZoom: 16}); }
-        map.on('locationfound', (e) => { L.circle(e.latlng, {radius: e.accuracy/2}).addTo(map).bindPopup("Du bist hier").openPopup(); });
+        map.on('locationfound', (e) => { 
+            L.circle(e.latlng, {radius: e.accuracy/2}).addTo(map).bindPopup("Du bist hier").openPopup(); 
+        });
 
         function openImpressum() {
-    const legalHtml = `
-        <div style="text-align: left; max-height: 400px; overflow-y: auto; padding: 15px; line-height: 1.5; font-size: 13px;">
-            <h2 style="margin-top:0; color: #27ae60;">Impressum & Datenschutz</h2>
-            
-            <p><b>Verantwortlich:</b><br>
-            Oliver Gluschke<br>
-            Prenzlauer Promenade 177<br>
-            13189 Berlin<br>
-            E-Mail: ogluschke@web.de</p>
+            const legalHtml = `<div style="text-align: left; max-height: 400px; overflow-y: auto; padding: 15px; line-height: 1.5; font-size: 13px;"><h2 style="margin-top:0; color: #27ae60;">Impressum & Datenschutz</h2><p><b>Verantwortlich:</b><br>Oliver Gluschke<br>Prenzlauer Promenade 177<br>13189 Berlin<br>E-Mail: ogluschke@web.de</p><hr style="border:0; border-top:1px solid #eee; margin:15px 0;"><h3 style="color:#27ae60;">Datenschutzerklärung</h3><p>Diese App ist ein privates Projekt zur Dokumentation von Kornelkirschen. Die Nutzung erfolgt freiwillig.</p><p><b>1. Hosting & Infrastruktur</b><br>Gehostet bei <b>GitHub Pages</b> und <b>Netlify</b>.</p><p><b>2. Datenbank & Medien</b><br>Speicherung bei <b>Supabase</b>.</p><p><b>3. Kartendienst</b><br>Kartenkacheln von <b>Google Maps</b>.</p></div>`;
+            L.popup().setLatLng(map.getCenter()).setContent(legalHtml).openOn(map);
+        }
 
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
-
-            <h3 style="color: #27ae60;">Datenschutzerklärung</h3>
-            <p>Diese App ist ein privates Projekt zur Dokumentation von Kornelkirschen. Die Nutzung erfolgt freiwillig.</p>
-
-            <p><b>1. Hosting & Infrastruktur</b><br>
-            Diese Webseite wird bei <b>GitHub Pages</b> und <b>Netlify</b> gehostet. Beim Aufruf der Seite werden technisch notwendige Verbindungsdaten (IP-Adresse, Browsertyp) an diese Anbieter übertragen, um die Seite anzuzeigen.</p>
-
-            <p><b>2. Datenbank & Medien (Supabase)</b><br>
-            Deine Einträge (Standort, optionaler Name, Fotos) werden in einer Datenbank bei <b>Supabase</b> gespeichert. Mit dem Absenden einer Sichtung erklärst du dich einverstanden, dass diese Daten öffentlich auf der Karte angezeigt werden.</p>
-
-            <p><b>3. Kartendienst (Google Maps)</b><br>
-            Diese App nutzt Kartenkacheln von Google Maps. Dabei wird deine IP-Adresse an Server von Google übertragen. Dies ist notwendig, um die geografische Karte darzustellen.</p>
-
-            <p><b>4. Standortdaten</b><br>
-            Die GPS-Funktion ("Locate Me") greift nur nach deiner ausdrücklichen Freigabe auf deinen Standort zu. Diese Daten werden nur lokal im Browser verarbeitet, außer du entscheidest dich aktiv, einen Standort zu speichern.</p>
-
-            <p><b>5. Deine Rechte</b><br>
-            Du hast das Recht, Auskunft über deine gespeicherten Daten zu erhalten oder deren Löschung zu verlangen. Kontaktiere mich dazu bitte per E-Mail.</p>
-        </div>
-    `;
-    L.popup().setLatLng(map.getCenter()).setContent(legalHtml).openOn(map);
-}
-
-function openAbout() {
-    const aboutHtml = `
-        <div style="text-align: left; max-height: 400px; overflow-y: auto; padding: 15px; line-height: 1.5;">
-            <img src="about-bild.jpg" 
-            style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" 
-            alt="Blühende Kornelkirsche">
-
-            <h2 style="margin-top:0; color: #27ae60;">Über den Kornelkirschen-Monitor 🍒</h2>
-            
-            <p><b>Warum diese App?</b><br>
-            Vielleicht ist es dir auch schon aufgefallen: Im Vorfrühling leuchten unsere Gärten und Parks überall knallgelb. Meistens ist das die Forsythie. Sie sieht prächtig aus, verbirgt aber ein ökologisches Geheimnis: Für unsere Insektenwelt ist sie so nützlich wie eine Plastikblume, da sie weder Pollen noch Nektar bietet.</p>
-            
-            <p><b>Die Heldin im Hintergrund: Die Kornelkirsche (Cornus mas)</b><br>
-            Fast zur gleichen Zeit blüht ein heimisches Wunderwerk ebenfalls in leuchtendem Gelb: die Kornelkirsche. Im Gegensatz zur Forsythie ist sie ein echtes Buffet für die Natur. Als eine der ersten Nahrungsquellen im Jahr liefert sie wertvollen Nektar für früh fliegende Wildbienen und Hummeln. Später im Jahr trägt sie Früchte, die nicht nur Vögeln schmecken, sondern auch für uns Menschen essbar und gesund sind. Doch leider wird sie oft von der sterilen Forsythie verdrängt.</p>
-            
-            <p><b>Unsere Mission</b><br>
-            Der Kornelkirschen-Monitor ist ein Herzensprojekt für alle, denen Biodiversität und Artenschutz wichtig sind. Wir möchten:</p>
-            <ul style="padding-left: 20px; margin-top: 0;">
-                <li><b>Sichtbarkeit schaffen:</b> Wo wachsen sie noch, die echten Kornelkirschen?</li>
-                <li><b>Wissen teilen:</b> Damit dieser wertvolle Strauch wieder einen festen Platz in unseren Köpfen und Gärten findet.</li>
-                <li><b>Gemeinsam dokumentieren:</b> Hilf mit, Standorte einzutragen, um eine lebendige Landkarte unserer Natur zu weben.</li>
-            </ul>
-            
-            <p>Egal ob du Standorte für die Ernte suchst, Setzlinge ziehen willst (bitte immer geltendes Naturschutzrecht beachten!) oder einfach nur neugierig bist:</p>
-
-            <p style="font-weight: bold; text-align: center;">Schön, dass du dabei bist! 🍒✨</p>
-
-            <p style="font-style: italic; font-size: 11px; border-top: 1px solid #eee; padding-top: 10px; margin-top: 15px; color: #666;">
-                Ein kleiner technischer Hinweis: Dieses Projekt wurde von einem Naturfreund ohne vorherige Coding-Erfahrung ins Leben gerufen – erstellt mit der kreativen und technischen Unterstützung der KI Gemini. Ein Beweis dafür, dass Technik dabei helfen kann, unsere echte Umwelt besser zu verstehen.
-            </p>
-        </div>
-    `;
-    L.popup().setLatLng(map.getCenter()).setContent(aboutHtml).openOn(map);
-}
+        function openAbout() {
+            const aboutHtml = `<div style="text-align: left; max-height: 400px; overflow-y: auto; padding: 15px; line-height: 1.5;"><img src="about-bild.jpg" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" alt="Kornelkirsche"><h2 style="margin-top:0; color: #27ae60;">Über den Monitor 🍒</h2><p>Die Kornelkirsche ist eine wichtige Nahrungsquelle für Insekten im Vorfrühling. Im Gegensatz zur Forsythie liefert sie Nektar und Pollen.</p></div>`;
+            L.popup().setLatLng(map.getCenter()).setContent(aboutHtml).openOn(map);
+        }
 
         function updateAdminUI() {
             const logoutLink = document.getElementById('admin-logout-link');
@@ -464,15 +383,9 @@ function openAbout() {
         updateAdminUI();
 
         function cherryMagic() {
-    // 1. Wir holen uns die aktuelle Anzahl aus dem Text
-    const text = document.getElementById('counter').innerText;
-    
-    // 2. Wir schicken eine kleine Nachricht ab
-    alert("Du hast schon " + text + " gefunden! Weiter so! 🍒✨");
-    
-    // 3. Ein kleiner Log-Eintrag für uns Entwickler (F12 Konsole)
-    console.log("Die Kirsch-Magie wurde aktiviert!");
-}
+            const text = document.getElementById('counter').innerText;
+            alert("Du hast schon " + text + " gefunden! Weiter so! 🍒✨");
+        }
     </script>
 </body>
 </html>
