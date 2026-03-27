@@ -419,9 +419,16 @@
         }
 
         function locateMe() { map.locate({setView: true, maxZoom: 16}); }
-        map.on('locationfound', (e) => { 
-            L.circle(e.latlng, {radius: e.accuracy/2}).addTo(map).bindPopup("Du bist hier").openPopup(); 
-        });
+            map.on('locationfound', (e) => { 
+                // Wir zeichnen nur noch den Kreis, OHNE Popup und OHNE Klick-Sperre
+                L.circle(e.latlng, {
+                    radius: e.accuracy / 2,
+                    interactive: false, // WICHTIG: Erlaubt Klicks "durch" den Kreis auf die Karte
+                    color: '#3498db',
+                    fillColor: '#3498db',
+                    fillOpacity: 0.15
+                }).addTo(map); 
+});
 
         function openImpressum() {
             const legalHtml = `
