@@ -172,21 +172,6 @@
 
         // 3. Zoom-Steuerung hinzufügen
         L.control.zoom({ position: 'bottomright' }).addTo(map);
-        
-        // 4. Dann Custom GPS Button hinzufügen (landet automatisch darunter)
-        const CustomLocate = L.Control.extend({
-            options: { position: 'bottomright' },
-            onAdd: function() {
-                const div = L.DomUtil.create('div', 'leaflet-control-locate');
-                div.innerHTML = '📍';
-                div.onclick = function(e) {
-                    L.DomEvent.stopPropagation(e); // Verhindert Klicks auf die Karte
-                    locateMe();
-                };
-                return div;
-            }
-        });
-        map.addControl(new CustomLocate());
 
         L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: 'Google'
@@ -447,17 +432,47 @@
             });
         }
 
-        function locateMe() { map.locate({setView: true, maxZoom: 16}); }
+        // 1. Die Funktion muss GANZ oben (oder zumindest vor dem Button) klar definiert sein
+        function locateMe() { 
+            console.log("GPS Button wurde gedrückt"); // Zum Testen in der Konsole
+            map.locate({setView: true, maxZoom: 16}); 
+        }
+            // 2. Den Nutzer-Kreis zeichnen, wenn Position gefunden wurde
             map.on('locationfound', (e) => { 
-                // Wir zeichnen nur noch den Kreis, OHNE Popup und OHNE Klick-Sperre
-                L.circle(e.latlng, {
-                    radius: e.accuracy / 2,
-                    interactive: false, // WICHTIG: Erlaubt Klicks "durch" den Kreis auf die Karte
-                    color: '#3498db',
-                    fillColor: '#3498db',
-                    fillOpacity: 0.15
-                }).addTo(map); 
-});
+            // Erstmal alle alten blauen Kreise entfernen, damit die Karte nicht voll wird
+            map.eachLayer(layer => {
+                if (layer instanceof L.Circle && layer.options.color === '#3498db') {
+                    map.removeLayer(layer);
+                }
+            });
+
+            L.circle(e.latlng, {
+                radius: e.accuracy / 2,
+                interactive: false,
+                color: '#3498db',
+                fillColor: '#3498db',
+                fillOpacity: 0.15
+            }).addTo(map); 
+        });
+
+                // 3. Den Button erstellen
+        const CustomLocate = L.Control.extend({
+            options: { position: 'bottomright' },
+            onAdd: function(map) {
+                const div = L.DomUtil.create('div', 'leaflet-control-locate');
+                div.innerHTML = '📍';
+                
+                // Leaflet-eigene Klick-Methode nutzen (das ist sicherer!)
+                L.DomEvent.on(div, 'click', function(e) {
+                    L.DomEvent.stopPropagation(e);
+                    L.DomEvent.preventDefault(e);
+                    locateMe();
+                });
+                
+                return div;
+            }
+        });
+        map.addControl(new CustomLocate());
 
         function openImpressum() {
             const legalHtml = `
