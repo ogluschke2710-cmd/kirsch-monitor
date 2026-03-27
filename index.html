@@ -365,15 +365,75 @@
             L.circle(e.latlng, {radius: e.accuracy/2}).addTo(map).bindPopup("Du bist hier").openPopup(); 
         });
 
-        function openImpressum() {
-            const legalHtml = `<div style="text-align: left; max-height: 400px; overflow-y: auto; padding: 15px; line-height: 1.5; font-size: 13px;"><h2 style="margin-top:0; color: #27ae60;">Impressum & Datenschutz</h2><p><b>Verantwortlich:</b><br>Oliver Gluschke<br>Prenzlauer Promenade 177<br>13189 Berlin<br>E-Mail: ogluschke@web.de</p><hr style="border:0; border-top:1px solid #eee; margin:15px 0;"><h3 style="color:#27ae60;">Datenschutzerklärung</h3><p>Diese App ist ein privates Projekt zur Dokumentation von Kornelkirschen. Die Nutzung erfolgt freiwillig.</p><p><b>1. Hosting & Infrastruktur</b><br>Gehostet bei <b>GitHub Pages</b> und <b>Netlify</b>.</p><p><b>2. Datenbank & Medien</b><br>Speicherung bei <b>Supabase</b>.</p><p><b>3. Kartendienst</b><br>Kartenkacheln von <b>Google Maps</b>.</p></div>`;
-            L.popup().setLatLng(map.getCenter()).setContent(legalHtml).openOn(map);
-        }
+                function openImpressum() {
+    const legalHtml = `
+        <div style="text-align: left; max-height: 400px; overflow-y: auto; padding: 15px; line-height: 1.5; font-size: 13px;">
+            <h2 style="margin-top:0; color: #27ae60;">Impressum & Datenschutz</h2>
+
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+
+            <h3 style="color: #27ae60;">Datenschutzerklärung</h3>
+            <p>Diese App ist ein privates Projekt zur Dokumentation von Kornelkirschen. Die Nutzung erfolgt freiwillig.</p>
+
+            <p><b>1. Hosting & Infrastruktur</b><br>
+            Diese Webseite wird bei <b>GitHub Pages</b> und <b>Netlify</b> gehostet. Beim Aufruf der Seite werden technisch notwendige Verbindungsdaten (IP-Adresse, Browsertyp) an diese Anbieter übertragen, um die Seite anzuzeigen.</p>
+
+            <p><b>2. Datenbank & Medien (Supabase)</b><br>
+            Deine Einträge (Standort, optionaler Name, Fotos) werden in einer Datenbank bei <b>Supabase</b> gespeichert. Mit dem Absenden einer Sichtung erklärst du dich einverstanden, dass diese Daten öffentlich auf der Karte angezeigt werden.</p>
+
+            <p><b>3. Kartendienst (Google Maps)</b><br>
+            Diese App nutzt Kartenkacheln von Google Maps. Dabei wird deine IP-Adresse an Server von Google übertragen. Dies ist notwendig, um die geografische Karte darzustellen.</p>
+
+            <p><b>4. Standortdaten</b><br>
+            Die GPS-Funktion ("Locate Me") greift nur nach deiner ausdrücklichen Freigabe auf deinen Standort zu. Diese Daten werden nur lokal im Browser verarbeitet, außer du entscheidest dich aktiv, einen Standort zu speichern.</p>
+
+            <p><b>5. Deine Rechte</b><br>
+            Du hast das Recht, Auskunft über deine gespeicherten Daten zu erhalten oder deren Löschung zu verlangen. Kontaktiere mich dazu bitte per E-Mail.</p>
+
+            <p><b>Verantwortlich:</b><br>
+            Oliver Gluschke<br>
+            Prenzlauer Promenade 177<br>
+            13189 Berlin<br>
+            E-Mail: ogluschke@web.de</p>
+        </div>
+    `;
+    L.popup().setLatLng(map.getCenter()).setContent(legalHtml).openOn(map);
+}
 
         function openAbout() {
-            const aboutHtml = `<div style="text-align: left; max-height: 400px; overflow-y: auto; padding: 15px; line-height: 1.5;"><img src="about-bild.jpg" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" alt="Kornelkirsche"><h2 style="margin-top:0; color: #27ae60;">Über den Monitor 🍒</h2><p>Die Kornelkirsche ist eine wichtige Nahrungsquelle für Insekten im Vorfrühling. Im Gegensatz zur Forsythie liefert sie Nektar und Pollen.</p></div>`;
-            L.popup().setLatLng(map.getCenter()).setContent(aboutHtml).openOn(map);
-        }
+    const aboutHtml = `
+        <div style="text-align: left; max-height: 400px; overflow-y: auto; padding: 15px; line-height: 1.5;">
+            <img src="about-bild.jpg" 
+            style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" 
+            alt="Blühende Kornelkirsche">
+
+            <h2 style="margin-top:0; color: #27ae60;">Über den Kornelkirschen-Monitor 🍒</h2>
+            
+            <p><b>Warum diese App?</b><br>
+            Vielleicht ist es dir auch schon aufgefallen: Im Vorfrühling leuchten unsere Gärten und Parks überall knallgelb. Meistens ist das die Forsythie. Sie sieht prächtig aus, verbirgt aber ein ökologisches Geheimnis: Für unsere Insektenwelt ist sie so nützlich wie eine Plastikblume, da sie weder Pollen noch Nektar bietet.</p>
+            
+            <p><b>Die Heldin im Hintergrund: Die Kornelkirsche (Cornus mas)</b><br>
+            Fast zur gleichen Zeit blüht ein heimisches Wunderwerk ebenfalls in leuchtendem Gelb: die Kornelkirsche. Im Gegensatz zur Forsythie ist sie ein echtes Buffet für die Natur. Als eine der ersten Nahrungsquellen im Jahr liefert sie wertvollen Nektar für früh fliegende Wildbienen und Hummeln. Später im Jahr trägt sie Früchte, die nicht nur Vögeln schmecken, sondern auch für uns Menschen essbar und gesund sind. Doch leider wird sie oft von der sterilen Forsythie verdrängt.</p>
+            
+            <p><b>Unsere Mission</b><br>
+            Der Kornelkirschen-Monitor ist ein Herzensprojekt für alle, denen Biodiversität und Artenschutz wichtig sind. Wir möchten:</p>
+            <ul style="padding-left: 20px; margin-top: 0;">
+                <li><b>Sichtbarkeit schaffen:</b> Wo wachsen sie noch, die echten Kornelkirschen?</li>
+                <li><b>Wissen teilen:</b> Damit dieser wertvolle Strauch wieder einen festen Platz in unseren Köpfen und Gärten findet.</li>
+                <li><b>Gemeinsam dokumentieren:</b> Hilf mit, Standorte einzutragen, um eine lebendige Landkarte unserer Natur zu weben.</li>
+            </ul>
+            
+            <p>Egal ob du Standorte für die Ernte suchst, Setzlinge ziehen willst (bitte immer geltendes Naturschutzrecht beachten!) oder einfach nur neugierig bist:</p>
+
+            <p style="font-weight: bold; text-align: center;">Schön, dass du dabei bist! 🍒✨</p>
+
+            <p style="font-style: italic; font-size: 11px; border-top: 1px solid #eee; padding-top: 10px; margin-top: 15px; color: #666;">
+                Ein kleiner technischer Hinweis: Dieses Projekt wurde von einem Naturfreund ohne vorherige Coding-Erfahrung ins Leben gerufen – erstellt mit der kreativen und technischen Unterstützung der KI Gemini. Ein Beweis dafür, dass Technik dabei helfen kann, unsere echte Umwelt besser zu verstehen.
+            </p>
+        </div>
+    `;
+    L.popup().setLatLng(map.getCenter()).setContent(aboutHtml).openOn(map);
+}
 
         function updateAdminUI() {
             const logoutLink = document.getElementById('admin-logout-link');
