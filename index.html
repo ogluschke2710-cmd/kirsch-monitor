@@ -494,59 +494,98 @@
         async function uploadExtraPhotos(id) {
             const btn = document.getElementById('extra-save-btn');
             const files = document.getElementById('extra-photo-input').files;
-            if (files.length === 0) return;
+
+            if (!files || files.length === 0) {
+                alert("Bitte wähle zuerst Bilder aus!");
+                return;
+            }
 
             btn.disabled = true;
             btn.innerText = "Lade Daten...";
 
             try {
-                // 1. FIX: Wir rufen BEIDE Spalten aus der Datenbank ab
+                // 1. Daten abrufen
                 const { data: sichtung, error: fetchError } = await supabaseClient
                     .from('sichtungen')
                     .select('fotos, foto_url')
                     .eq('id', id)
                     .single();
 
-                if (fetchError) throw fetchError;
+                if (fetchError) {
+                    console.error("Fetch Error:", fetchError);
+                    throw new Error("Konnte den bestehenden Eintrag nicht laden.");
+                }
 
-                let currentPhotos = sichtung.fotos || [];
+                // Initialisiere currentPhotos. Achte darauf, dass es ein Array ist.
+                let currentPhotos = [];
+                if (Array.isArray(sichtung.fotos)) {
+                    currentPhotos = [...sichtung.fotos];
+                }
 
-                // 2. FIX: Das alte Einzel-Bild in die neue Liste "retten", falls nötig
+                // 2. Altes Bild retten, falls fotos leer ist, aber foto_url existiert
                 if (currentPhotos.length === 0 && sichtung.foto_url) {
                     currentPhotos.push(sichtung.foto_url);
                 }
 
                 // 3. Neue Bilder hochladen
+                let uploadErfolgreich = false; // Flag, um zu sehen, ob mindestens eins geklappt hat
+
                 for (let i = 0; i < files.length; i++) {
                     btn.innerText = `Bild ${i + 1}/${files.length}...`;
-                    const resizedBlob = await resizeImage(files[i], 1600, 1600);
-                    const fileName = Date.now() + "_" + Math.floor(Math.random() * 1000000) + ".jpg";
+                    const file = files[i];
 
-                    const { error: uploadError } = await supabaseClient.storage.from('pflanzenfotos').upload(fileName, resizedBlob);
+                    try {
+                        const resizedBlob = await resizeImage(file, 1600, 1600);
+                        const fileName = `extra_${Date.now()}_${Math.floor(Math.random() * 1000000)}.jpg`;
 
-                    if (!uploadError) {
-                        const { data } = supabaseClient.storage.from('pflanzenfotos').getPublicUrl(fileName);
+                        const { error: uploadError } = await supabaseClient.storage
+                            .from('pflanzenfotos')
+                            .upload(fileName, resizedBlob);
+
+                        if (uploadError) {
+                            console.error(`Fehler beim Upload von Bild ${i + 1}:`, uploadError);
+                            // Mache weiter mit dem nächsten Bild, auch wenn eins fehlschlägt
+                            continue;
+                        }
+
+                        const { data } = supabaseClient.storage
+                            .from('pflanzenfotos')
+                            .getPublicUrl(fileName);
+
                         currentPhotos.push(data.publicUrl);
+                        uploadErfolgreich = true;
+
+                    } catch (imageError) {
+                        console.error(`Fehler bei der Bildverarbeitung ${i + 1}:`, imageError);
                     }
                 }
 
-                btn.innerText = "Speichere...";
+                if (!uploadErfolgreich) {
+                    throw new Error("Kein Bild konnte erfolgreich hochgeladen werden.");
+                }
 
-                // 4. Die komplettierte Liste in der Datenbank aktualisieren
+                btn.innerText = "Speichere Datenbank...";
+
+                // 4. Datenbank aktualisieren
                 const { error: updateError } = await supabaseClient
                     .from('sichtungen')
                     .update({ fotos: currentPhotos })
                     .eq('id', id);
 
-                if (updateError) throw updateError;
+                if (updateError) {
+                    console.error("Update Error:", updateError);
+                    throw new Error("Konnte die Datenbank nicht mit den neuen Bildern aktualisieren.");
+                }
 
-                alert("Erfolgreich hinzugefügt! 🍒");
+                alert("Bilder erfolgreich nachgereicht! 🍒");
                 map.closePopup();
                 loadSichtungen();
 
             } catch (e) {
-                console.error("Fehler beim Nachreichen:", e);
-                alert("Fehler beim Hochladen! Schau in die Konsole.");
+                console.error("Kritischer Fehler beim Nachreichen:", e);
+                alert(`Fehler: ${e.message}\nSchau in die Entwicklerkonsole für Details.`);
+            } finally {
+                // Egal was passiert, Button am Ende wieder aktivieren
                 btn.disabled = false;
                 btn.innerText = "Hochladen";
             }
