@@ -524,12 +524,19 @@
             if (!deletePw) return;
 
             try {
-                // 3. Löschen mit Passwort im Header
-                const { error } = await supabaseClient
+                // FIX: Wir erstellen für diesen einen Löschvorgang einen temporären Admin-Client,
+                // der das Passwort global in den Headern mitschickt.
+                const adminClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                    global: {
+                        headers: { 'x-admin-password': deletePw }
+                    }
+                });
+
+                // 3. Löschen mit dem neuen Admin-Client
+                const { error } = await adminClient
                     .from('sichtungen')
                     .delete()
-                    .eq('id', id)
-                    .headers({ 'x-admin-password': deletePw }); // Dein Supabase-Policy Key
+                    .eq('id', id);
 
                 if (error) {
                     alert("Stopp! Fehler: " + error.message + "\n(Eventuell ist der Key falsch?)");
@@ -540,6 +547,7 @@
                 }
             } catch (err) {
                 console.error("Kritischer Fehler beim Löschversuch:", err);
+                alert("Ein unerwarteter Fehler ist aufgetreten.");
             }
         }
 
