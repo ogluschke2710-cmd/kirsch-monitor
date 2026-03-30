@@ -312,17 +312,23 @@
             let bListe = s.fotos || [];
             if (bListe.length === 0 && s.foto_url) { bListe = [s.foto_url]; }
 
-            // KOMPAKTE GALERIE (Lazy Loading)
+            // KOMPAKTE GALERIE (Mit gemeinsamem Container)
+            popupContent += `<div class="gallery-container">`; // NEU: Der gemeinsame Karton
             bListe.forEach((url, index) => {
                 if (index === 0) {
-                    // Nur das ERSTE Bild wird sichtbar in das Popup geladen
-                    popupContent += `<div class="popup-gallery" data-src="${url}"><img src="${url}" alt="${s.art}" loading="lazy"></div>`;
+                    popupContent += `<div class="gallery-item" data-src="${url}">
+                                        <img src="${url}" alt="${s.art}" loading="lazy">
+                                     </div>`;
                 } else {
-                    // Alle weiteren Bilder bleiben unsichtbar (kein <img> Tag = kein Download!), 
-                    // sind aber für die Vollbild-Galerie klickbar.
-                    popupContent += `<div class="popup-gallery" data-src="${url}" style="display: none;"></div>`;
+                    popupContent += `<div class="gallery-item" data-src="${url}" style="display: none;"></div>`;
                 }
             });
+            popupContent += `</div>`; // Karton schließen
+
+            // Kleiner optischer Hinweis
+            if (bListe.length > 1) {
+                popupContent += `<p style="font-size:11px; color:#666; margin-top:2px; margin-bottom:10px; text-align:center;">📸 + ${bListe.length - 1} weitere Fotos (Klick aufs Bild)</p>`;
+            }
 
             // Kleiner optischer Hinweis für den Nutzer, wenn es mehr als 1 Bild gibt
             if (bListe.length > 1) {
@@ -389,10 +395,15 @@
 
         // LightGallery initialisieren, sobald ein Popup geöffnet wird
         map.on('popupopen', function () {
-            const galleryElements = document.querySelectorAll('.popup-gallery');
-            galleryElements.forEach(el => {
+            const galleryContainers = document.querySelectorAll('.gallery-container');
+            galleryContainers.forEach(container => {
                 if (window.lightGallery) {
-                    lightGallery(el, { plugins: [lgZoom], speed: 500, download: false });
+                    lightGallery(container, {
+                        selector: '.gallery-item', // WICHTIG: Sagt LG, dass alle diese Items zusammengehören
+                        plugins: [lgZoom],
+                        speed: 500,
+                        download: false
+                    });
                 }
             });
         });
