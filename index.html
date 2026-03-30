@@ -312,10 +312,22 @@
             let bListe = s.fotos || [];
             if (bListe.length === 0 && s.foto_url) { bListe = [s.foto_url]; }
 
-            // Für jedes Foto einen Eintrag in der Galerie erstellen
-            bListe.forEach(url => {
-                popupContent += `<div class="popup-gallery" data-src="${url}"><img src="${url}" alt="${s.art}"></div>`;
+            // KOMPAKTE GALERIE (Lazy Loading)
+            bListe.forEach((url, index) => {
+                if (index === 0) {
+                    // Nur das ERSTE Bild wird sichtbar in das Popup geladen
+                    popupContent += `<div class="popup-gallery" data-src="${url}"><img src="${url}" alt="${s.art}" loading="lazy"></div>`;
+                } else {
+                    // Alle weiteren Bilder bleiben unsichtbar (kein <img> Tag = kein Download!), 
+                    // sind aber für die Vollbild-Galerie klickbar.
+                    popupContent += `<div class="popup-gallery" data-src="${url}" style="display: none;"></div>`;
+                }
             });
+
+            // Kleiner optischer Hinweis für den Nutzer, wenn es mehr als 1 Bild gibt
+            if (bListe.length > 1) {
+                popupContent += `<p style="font-size:11px; color:#666; margin-top:2px; text-align:center;">📸 + ${bListe.length - 1} weitere Fotos (Klick aufs Bild)</p>`;
+            }
 
             // Buttons für Aktionen im Popup
             popupContent += `<button onclick="openPhotoUpload(${s.id})" style="background:#27ae60; margin-top:10px;">📷 Foto nachreichen</button>`;
