@@ -514,39 +514,41 @@
             } catch (e) { alert("Fehler!"); btn.disabled = false; }
         }
 
-async function deleteSichtung(id) {
+        async function deleteSichtung(id) {
             // 1. Einfache Sicherheitsabfrage
             const confirmDelete = confirm("Möchtest du diesen Standort wirklich unwiderruflich löschen?");
             if (!confirmDelete) return;
 
-            // 2. Den geheimen Key für die Supabase-Policy abfragen
+            // 2. Den geheimen Key abfragen
             const deletePw = prompt("Bitte den Datenbank-Sicherheits-Key eingeben:");
             if (!deletePw) return;
 
             try {
-                // NEU: Wir erstellen einen temporären Admin-Client, der das Passwort 
-                // direkt bei der Erstellung in die Header packt.
                 const adminClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
                     global: {
                         headers: { 'x-admin-password': deletePw }
                     }
                 });
 
-                // 3. Löschen mit dem NEUEN adminClient (Hier steht KEIN .headers() mehr am Ende!)
-                const { error } = await adminClient
+                // 3. FIX: Wir hängen .select() an, um eine Quittung der gelöschten Zeile zu fordern
+                const { data, error } = await adminClient
                     .from('sichtungen')
                     .delete()
-                    .eq('id', id);
+                    .eq('id', id)
+                    .select();
 
                 if (error) {
-                    alert("Stopp! Fehler: " + error.message + "\n(Eventuell ist der Key falsch?)");
+                    alert("Kritischer Datenbank-Fehler: " + error.message);
+                } else if (data && data.length === 0) {
+                    // Wenn die Quittung leer ist (Länge 0), hat die Policy abgeblockt!
+                    alert("Stopp! Löschen abgelehnt. Hast du das falsche Passwort eingegeben?");
                 } else {
                     alert("Eintrag erfolgreich gelöscht! 🗑️");
-                    map.closePopup(); 
-                    loadSichtungen(); 
+                    map.closePopup();
+                    loadSichtungen();
                 }
             } catch (err) {
-                console.error("Kritischer Fehler beim Löschversuch:", err);
+                console.error("Fehler beim Löschversuch:", err);
                 alert("Ein unerwarteter Fehler ist aufgetreten.");
             }
         }
