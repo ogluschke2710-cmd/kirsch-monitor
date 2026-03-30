@@ -322,7 +322,8 @@
 
             // Lösch-Button nur für Admins sichtbar machen
             if (binIchAdmin()) {
-                popupContent += `<button onclick="deleteSichtung(${s.id})" style="background:#e74c3c;">🗑️ Eintrag löschen</button>`;
+                popupContent += `<hr style="border: 0.5px solid #eee; margin: 10px 0;">
+                     <button onclick="deleteSichtung(${s.id})" style="background:#ff4d4d; color:white; border:none; border-radius:4px; padding:8px; width:100%; font-weight:bold; cursor:pointer;">🗑️ Eintrag löschen</button>`;
             }
 
             popupContent += `</div>`;
@@ -514,9 +515,31 @@
         }
 
         async function deleteSichtung(id) {
-            if (confirm("Wirklich löschen?")) {
-                const { error } = await supabaseClient.from('sichtungen').delete().eq('id', id);
-                if (!error) { map.closePopup(); loadSichtungen(); }
+            // 1. Einfache Sicherheitsabfrage
+            const confirmDelete = confirm("Möchtest du diesen Standort wirklich unwiderruflich löschen?");
+            if (!confirmDelete) return;
+
+            // 2. Den geheimen Key für die Supabase-Policy abfragen
+            const deletePw = prompt("Bitte den Datenbank-Sicherheits-Key eingeben:");
+            if (!deletePw) return;
+
+            try {
+                // 3. Löschen mit Passwort im Header
+                const { error } = await supabaseClient
+                    .from('sichtungen')
+                    .delete()
+                    .eq('id', id)
+                    .headers({ 'x-admin-password': deletePw }); // Dein Supabase-Policy Key
+
+                if (error) {
+                    alert("Stopp! Fehler: " + error.message + "\n(Eventuell ist der Key falsch?)");
+                } else {
+                    alert("Eintrag erfolgreich gelöscht! 🗑️");
+                    map.closePopup(); 
+                    loadSichtungen(); // Lädt die Karte neu, Marker verschwindet
+                }
+            } catch (err) {
+                console.error("Kritischer Fehler beim Löschversuch:", err);
             }
         }
 
