@@ -40,4 +40,4 @@
 
 
 ---
-*Zuletzt aktualisiert: Montagabend, 30.03.2026*
+*Zuletzt aktualisiert: Donnerstagabend, 02.04.2026*
