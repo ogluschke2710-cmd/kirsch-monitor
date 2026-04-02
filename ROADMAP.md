@@ -2,15 +2,12 @@
 
 ## 🔴 P0: Kritisch wegen Datenschutz
 - [ ] Netlify updaten, sobald Limit wieder frei
-- [ ] Captcha gegen Bot Attacken
-- [ ] Supabase Rechte prüfen (Anon Key)
-- [ ] Lazy Loading
-- [ ] Log Idee nochmal durchgehen
 
 ## 🟡 P1: User Experience "Im Feld" (Next Steps)
 - [ ] WLAN-Upload: Bilder erst im WLAN hochladen
 - [ ] Bildergalerie verbessern: Scrollbar/Wischen bei mehreren Bildern (Vorschau-System)
 - [ ] X zum Feld schließen beim Popup größer machen, da sehr klein, falls man ausversehen klickt
+- [ ] Gallerie Ansicht (Kleine Vorschaubilder)
 
 ## 🟢 P2: Features & Design (Zukunft)
 - [ ] Sidebar/Top-Bar schlanker machen (ausblendbar/scrollbar)
@@ -21,6 +18,7 @@
 - [ ] Suche & Filter (z.B. nach Entdeckernamen)
 - [ ] Animierte Icons (Pulsieren beim Drüberfahren) ggf Timeout, damit wahrnehmbar
 - [ ] ID-Anzeige, Statistik-Seite & Leaderboard ("Kornel-König").
+- [ ] HTML, JS und CSS in eigene Dateien für einfacheres Debugging etc
 
 ## ✅ Erledigt (Das Archiv des Erfolgs)
 - [x] Notizen bei Einträgen
@@ -35,6 +33,11 @@
 - [x] Favicon erstellen Die Kirsche als echtes App-Icon für Homescreen & Desktop.
 - [x] Löschfunktion bauen und Passwort aus Browser löschen danach 
 - [x] Nachreichen funktioniert nicht
+- [x] Lazy Loading
+- [x] Captcha gegen Bot Attacken
+- [x] Supabase Rechte prüfen (Anon Key)
+- [x] Log Idee nochmal durchgehen
+
 
 ---
 *Zuletzt aktualisiert: Montagabend, 30.03.2026*

@@ -388,6 +388,20 @@
         // Die Funktion direkt beim Start der Seite einmal ausführen
         loadSichtungen();
 
+        // Gedächtnis für Captcha Spam Filter
+        let klickZeiten = [];
+        
+        // --- DER FINGERABDRUCK (Spam-Tracking) ---
+        // Wir schauen nach, ob der Besucher schon ein Bändchen hat
+        let fingerprint = localStorage.getItem('cherry_fingerprint');
+        
+        // Wenn nicht, basteln wir ihm ein neues (z.B. "user_7x9p2m")
+        if (!fingerprint) {
+            fingerprint = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('cherry_fingerprint', fingerprint);
+        }
+        // ----------------------------------------------
+
         // LightGallery initialisieren, sobald ein Popup geöffnet wird
         map.on('popupopen', function () {
             const galleryContainers = document.querySelectorAll('.gallery-container');
@@ -404,10 +418,37 @@
         });
 
         // --- 5. NEUER EINTRAG ---
-        // --- 5. NEUER EINTRAG ---
         map.on('click', function (e) {
             const lat = e.latlng.lat; const lng = e.latlng.lng;
             const gespeicherterName = localStorage.getItem('entdeckerName') || '';
+
+            // --- CAPTCHA GEHIRN MIT SPAM-FILTER ---
+            const jetzt = Date.now(); 
+            klickZeiten.push(jetzt);  
+            
+            // Behalte nur Klicks aus den letzten 20 Sekunden
+            klickZeiten = klickZeiten.filter(zeit => jetzt - zeit < 20000); 
+            
+            // Alarmstufe ab dem 6. Klick (Länge > 5)
+            const zeigeCaptcha = klickZeiten.length > 5; 
+
+            // Zwei zufällige Zahlen für die Matheaufgabe
+            const zahl1 = Math.floor(Math.random() * 10) + 1; 
+            const zahl2 = Math.floor(Math.random() * 10) + 1; 
+            
+            // Wenn wir kein Captcha zeigen, übergeben wir -1 als Geheimsymbol für "kein Test nötig"
+            const richtigeAntwort = zeigeCaptcha ? (zahl1 + zahl2) : -1;            
+
+            // Baue das rote HTML-Schild zusammen, aber NUR, wenn zeigeCaptcha "wahr" (true) ist
+            const captchaHtml = zeigeCaptcha ? `
+                <label style="font-size:12px; color:#e74c3c; font-weight:bold;">Zu viele Klicks! Bist du ein Mensch? 🤔</label>
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <span id="captcha-frage" style="font-size:14px; margin-right: 10px; font-weight: bold;">Was ist ${zahl1} + ${zahl2}?</span>
+                    <input type="number" id="captcha-antwort" placeholder="Ergebnis" style="width: 80px !important; margin-bottom: 0 !important; padding: 6px !important;">
+                </div>
+            ` : ''; 
+            // -------------------------------------------
+
             const formHtml = `
                 <div class="custom-popup" style="text-align: left;">
                     <h3 style="margin-top:0;">Sichtung eintragen</h3>
@@ -429,6 +470,8 @@
                         <option value="baum">Baum</option>
                     </select>
                     
+                    ${captchaHtml}
+
                     <label style="font-size:12px; color:#666;">Fotos hinzufügen:</label>
                     <input type="file" id="photo-input" accept="image/*" onchange="previewFile()" multiple style="width:100%; margin-bottom:10px;">
                     <div id="photo-input-preview" style="margin-bottom:10px;"></div>
@@ -436,7 +479,8 @@
                     <p style="font-size: 10px; color: #7f8c8d; line-height: 1.2; margin-bottom: 12px; border-top: 1px solid #eee; padding-top: 8px;">
                         Hinweis: Mit dem Speichern erklärst du dich einverstanden, dass Standort, Name und Foto öffentlich auf der Karte angezeigt werden.
                     </p>
-                    <button id="save-btn" onclick="saveAll(${lat}, ${lng})" style="background:#2c3e50; color:white; width:100%; padding:12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Speichern</button>
+                    
+                    <button id="save-btn" onclick="saveAll(${lat}, ${lng}, ${richtigeAntwort})" style="background:#2c3e50; color:white; width:100%; padding:12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Speichern</button>
                 </div>`;
             L.popup().setLatLng(e.latlng).setContent(formHtml).openOn(map);
         });
@@ -459,10 +503,25 @@
             }
         }
 
-        async function saveAll(lat, lng) {
+        // HIER KOMMT DIE ÄNDERUNG: Wir nehmen die richtigeAntwort als dritten Parameter entgegen!
+        async function saveAll(lat, lng, richtigeAntwort) {
+            
+            // --- NEU: DER TÜRSTEHER ---
+            // Wenn richtigeAntwort NICHT -1 ist, bedeutet das: Das Captcha wurde angezeigt.
+            if (richtigeAntwort !== -1) {
+                // Wir lesen aus, was der Nutzer in das Feld getippt hat
+                const userAntwort = parseInt(document.getElementById('captcha-antwort').value);
+                
+                // Wenn es keine Zahl ist, oder die falsche Zahl, blockieren wir das Speichern!
+                if (isNaN(userAntwort) || userAntwort !== richtigeAntwort) {
+                    alert("Falsches Ergebnis! Bist du vielleicht doch ein Spambot? 🤖");
+                    return; // Das "return" sorgt dafür, dass die Funktion HIER SOFORT abgebrochen wird. Kein Speichern!
+                }
+            }
+            // --------------------------
+
             const btn = document.getElementById('save-btn');
             const files = document.getElementById('photo-input').files;
-            // Wichtig: Die Notiz auslesen, BEVOR wir speichern
             const notizText = document.getElementById('notiz-input').value;
             localStorage.setItem('entdeckerName', document.getElementById('entdecker-input').value);
 
@@ -490,7 +549,8 @@
                 entdecker: localStorage.getItem('entdeckerName'),
                 fotos: finalImageUrls,
                 foto_url: finalImageUrls[0] || null,
-                notiz: notizText
+                notiz: notizText,
+                session_id: fingerprint // <--- NEU: Hier übergeben wir das Besucher-Bändchen an Supabase
             }]);
 
             if (!dbError) {
@@ -522,7 +582,6 @@
             btn.innerText = "Lade Daten...";
 
             try {
-                // 1. Daten abrufen
                 const { data: sichtung, error: fetchError } = await supabaseClient
                     .from('sichtungen')
                     .select('fotos, foto_url')
@@ -534,19 +593,16 @@
                     throw new Error("Konnte den bestehenden Eintrag nicht laden.");
                 }
 
-                // Initialisiere currentPhotos. Achte darauf, dass es ein Array ist.
                 let currentPhotos = [];
                 if (Array.isArray(sichtung.fotos)) {
                     currentPhotos = [...sichtung.fotos];
                 }
 
-                // 2. Altes Bild retten, falls fotos leer ist, aber foto_url existiert
                 if (currentPhotos.length === 0 && sichtung.foto_url) {
                     currentPhotos.push(sichtung.foto_url);
                 }
 
-                // 3. Neue Bilder hochladen
-                let uploadErfolgreich = false; // Flag, um zu sehen, ob mindestens eins geklappt hat
+                let uploadErfolgreich = false; 
 
                 for (let i = 0; i < files.length; i++) {
                     btn.innerText = `Bild ${i + 1}/${files.length}...`;
@@ -562,7 +618,6 @@
 
                         if (uploadError) {
                             console.error(`Fehler beim Upload von Bild ${i + 1}:`, uploadError);
-                            // Mache weiter mit dem nächsten Bild, auch wenn eins fehlschlägt
                             continue;
                         }
 
@@ -584,7 +639,6 @@
 
                 btn.innerText = "Speichere Datenbank...";
 
-                // 4. Datenbank aktualisieren
                 const { error: updateError } = await supabaseClient
                     .from('sichtungen')
                     .update({ fotos: currentPhotos })
@@ -603,18 +657,15 @@
                 console.error("Kritischer Fehler beim Nachreichen:", e);
                 alert(`Fehler: ${e.message}\nSchau in die Entwicklerkonsole für Details.`);
             } finally {
-                // Egal was passiert, Button am Ende wieder aktivieren
                 btn.disabled = false;
                 btn.innerText = "Hochladen";
             }
         }
 
         async function deleteSichtung(id) {
-            // 1. Einfache Sicherheitsabfrage
             const confirmDelete = confirm("Möchtest du diesen Standort wirklich unwiderruflich löschen?");
             if (!confirmDelete) return;
 
-            // 2. Den geheimen Key abfragen
             const deletePw = prompt("Bitte den Datenbank-Sicherheits-Key eingeben:");
             if (!deletePw) return;
 
@@ -625,7 +676,6 @@
                     }
                 });
 
-                // 3. FIX: Wir hängen .select() an, um eine Quittung der gelöschten Zeile zu fordern
                 const { data, error } = await adminClient
                     .from('sichtungen')
                     .delete()
@@ -635,7 +685,6 @@
                 if (error) {
                     alert("Kritischer Datenbank-Fehler: " + error.message);
                 } else if (data && data.length === 0) {
-                    // Wenn die Quittung leer ist (Länge 0), hat die Policy abgeblockt!
                     alert("Stopp! Löschen abgelehnt. Hast du das falsche Passwort eingegeben?");
                 } else {
                     alert("Eintrag erfolgreich gelöscht! 🗑️");
@@ -668,31 +717,23 @@
             });
         }
 
-        // 1. Die Funktion muss GANZ oben (oder zumindest vor dem Button) klar definiert sein
         function locateMe() {
             console.log("GPS Button aktiv - starte Suche...");
-
-            // 1. Eventuelle laufende Suchen stoppen
             map.stopLocate();
-
-            // 2. Neu suchen mit hoher Priorität
             map.locate({
                 setView: true,
                 maxZoom: 16,
-                enableHighAccuracy: true // Erzwingt präziseres GPS
+                enableHighAccuracy: true 
             });
         }
-        // 2. Den Nutzer-Kreis zeichnen, wenn Position gefunden wurde
-        // A) Wenn die Position ERFOLGREICH gefunden wurde
+
         map.on('locationfound', (e) => {
-            // Erstmal alle alten blauen Kreise entfernen
             map.eachLayer(layer => {
                 if (layer instanceof L.Circle && layer.options.color === '#3498db') {
                     map.removeLayer(layer);
                 }
             });
 
-            // Neuen blauen Kreis zeichnen
             L.circle(e.latlng, {
                 radius: e.accuracy / 2,
                 interactive: false,
@@ -702,30 +743,23 @@
             }).addTo(map);
         });
 
-        // B) Wenn es einen FEHLER gab (z.B. GPS am Handy aus)
         map.on('locationerror', (e) => {
             console.error("GPS Fehler:", e.message);
-            // Wir zeigen die Meldung nur, wenn der Fehler nicht "Permission Denied" beim automatischen Start war
-            // Sonst nervt das Popup bei jedem Seitenaufruf, wenn jemand GPS deaktiviert hat.
             if (e.message !== "Geolocation error: User denied Geolocation.") {
                 alert("Standort konnte nicht gefunden werden. Bitte prüfe deine GPS-Einstellungen.");
             }
         });
 
-        // 3. Den Button erstellen
         const CustomLocate = L.Control.extend({
             options: { position: 'bottomright' },
             onAdd: function (map) {
                 const div = L.DomUtil.create('div', 'leaflet-control-locate');
                 div.innerHTML = '📍';
-
-                // Leaflet-eigene Klick-Methode nutzen (das ist sicherer!)
                 L.DomEvent.on(div, 'click', function (e) {
                     L.DomEvent.stopPropagation(e);
                     L.DomEvent.preventDefault(e);
                     locateMe();
                 });
-
                 return div;
             }
         });
