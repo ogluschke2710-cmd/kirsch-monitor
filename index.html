@@ -390,11 +390,11 @@
 
         // Gedächtnis für Captcha Spam Filter
         let klickZeiten = [];
-        
+
         // --- DER FINGERABDRUCK (Spam-Tracking) ---
         // Wir schauen nach, ob der Besucher schon ein Bändchen hat
         let fingerprint = localStorage.getItem('cherry_fingerprint');
-        
+
         // Wenn nicht, basteln wir ihm ein neues (z.B. "user_7x9p2m")
         if (!fingerprint) {
             fingerprint = 'user_' + Math.random().toString(36).substr(2, 9);
@@ -422,22 +422,27 @@
             const lat = e.latlng.lat; const lng = e.latlng.lng;
             const gespeicherterName = localStorage.getItem('entdeckerName') || '';
 
+            // --- NEU: Notiz-Speicher auslesen ---
+            const sollNotizBleiben = localStorage.getItem('keepNote') === 'true';
+            const gespeicherteNotiz = sollNotizBleiben ? (localStorage.getItem('lastNotiz') || '') : '';
+            // ------------------------------------
+
             // --- CAPTCHA GEHIRN MIT SPAM-FILTER ---
-            const jetzt = Date.now(); 
-            klickZeiten.push(jetzt);  
-            
+            const jetzt = Date.now();
+            klickZeiten.push(jetzt);
+
             // Behalte nur Klicks aus den letzten 20 Sekunden
-            klickZeiten = klickZeiten.filter(zeit => jetzt - zeit < 20000); 
-            
+            klickZeiten = klickZeiten.filter(zeit => jetzt - zeit < 20000);
+
             // Alarmstufe ab dem 6. Klick (Länge > 5)
-            const zeigeCaptcha = klickZeiten.length > 5; 
+            const zeigeCaptcha = klickZeiten.length > 5;
 
             // Zwei zufällige Zahlen für die Matheaufgabe
-            const zahl1 = Math.floor(Math.random() * 10) + 1; 
-            const zahl2 = Math.floor(Math.random() * 10) + 1; 
-            
+            const zahl1 = Math.floor(Math.random() * 10) + 1;
+            const zahl2 = Math.floor(Math.random() * 10) + 1;
+
             // Wenn wir kein Captcha zeigen, übergeben wir -1 als Geheimsymbol für "kein Test nötig"
-            const richtigeAntwort = zeigeCaptcha ? (zahl1 + zahl2) : -1;            
+            const richtigeAntwort = zeigeCaptcha ? (zahl1 + zahl2) : -1;
 
             // Baue das rote HTML-Schild zusammen, aber NUR, wenn zeigeCaptcha "wahr" (true) ist
             const captchaHtml = zeigeCaptcha ? `
@@ -446,7 +451,7 @@
                     <span id="captcha-frage" style="font-size:14px; margin-right: 10px; font-weight: bold;">Was ist ${zahl1} + ${zahl2}?</span>
                     <input type="number" id="captcha-antwort" placeholder="Ergebnis" style="width: 80px !important; margin-bottom: 0 !important; padding: 6px !important;">
                 </div>
-            ` : ''; 
+            ` : '';
             // -------------------------------------------
 
             const formHtml = `
@@ -459,8 +464,12 @@
 
                     <label style="font-size:12px; color:#666; font-family:sans-serif;">Notizen / Zustand:</label>
                     <textarea id="notiz-input" placeholder="z.B. schwer erreichbar..." 
-                        style="width:100%; height:60px; padding:8px; font-family:sans-serif; font-size:14px; border:1px solid #ccc; border-radius:4px; margin-bottom:10px;"></textarea>
+                        style="width:100%; height:60px; padding:8px; font-family:sans-serif; font-size:14px; border:1px solid #ccc; border-radius:4px; margin-bottom:10px;">${gespeicherteNotiz}</textarea>
                     
+                    <div style="margin-bottom: 12px; display: flex; align-items: center;">
+                        <input type="checkbox" id="keep-note-checkbox" ${sollNotizBleiben ? 'checked' : ''} style="width: auto !important; margin-bottom: 0 !important; margin-right: 8px !important; cursor: pointer;">
+                        <label for="keep-note-checkbox" style="font-size: 11px; color: #666; cursor: pointer; user-select: none;">Text für nächsten Eintrag merken</label>
+                    </div>
                     <label style="font-size:12px; color:#666;">Größe des Bestands:</label>
                     <select id="size" style="width:100%; padding:8px; box-sizing:border-box; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;">
                         <option value="sträuchchen">Sträuchchen</option>
@@ -505,17 +514,13 @@
 
         // HIER KOMMT DIE ÄNDERUNG: Wir nehmen die richtigeAntwort als dritten Parameter entgegen!
         async function saveAll(lat, lng, richtigeAntwort) {
-            
+
             // --- NEU: DER TÜRSTEHER ---
-            // Wenn richtigeAntwort NICHT -1 ist, bedeutet das: Das Captcha wurde angezeigt.
             if (richtigeAntwort !== -1) {
-                // Wir lesen aus, was der Nutzer in das Feld getippt hat
                 const userAntwort = parseInt(document.getElementById('captcha-antwort').value);
-                
-                // Wenn es keine Zahl ist, oder die falsche Zahl, blockieren wir das Speichern!
                 if (isNaN(userAntwort) || userAntwort !== richtigeAntwort) {
                     alert("Falsches Ergebnis! Bist du vielleicht doch ein Spambot? 🤖");
-                    return; // Das "return" sorgt dafür, dass die Funktion HIER SOFORT abgebrochen wird. Kein Speichern!
+                    return;
                 }
             }
             // --------------------------
@@ -524,6 +529,18 @@
             const files = document.getElementById('photo-input').files;
             const notizText = document.getElementById('notiz-input').value;
             localStorage.setItem('entdeckerName', document.getElementById('entdecker-input').value);
+
+            // --- NEU: Notiz-Gedächtnis abspeichern ---
+            const keepNoteCheckbox = document.getElementById('keep-note-checkbox');
+            if (keepNoteCheckbox) {
+                localStorage.setItem('keepNote', keepNoteCheckbox.checked);
+                if (keepNoteCheckbox.checked) {
+                    localStorage.setItem('lastNotiz', notizText);
+                } else {
+                    localStorage.removeItem('lastNotiz');
+                }
+            }
+            // -----------------------------------------
 
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span> Verarbeite Bilder...';
@@ -602,7 +619,7 @@
                     currentPhotos.push(sichtung.foto_url);
                 }
 
-                let uploadErfolgreich = false; 
+                let uploadErfolgreich = false;
 
                 for (let i = 0; i < files.length; i++) {
                     btn.innerText = `Bild ${i + 1}/${files.length}...`;
@@ -723,7 +740,7 @@
             map.locate({
                 setView: true,
                 maxZoom: 16,
-                enableHighAccuracy: true 
+                enableHighAccuracy: true
             });
         }
 

@@ -2,6 +2,7 @@
 
 ## 🔴 P0: Kritisch wegen Datenschutz
 - [ ] Netlify updaten, sobald Limit wieder frei
+- [ ] Brauchen wir ein Cookie Banner oder so?
 
 ## 🟡 P1: User Experience "Im Feld" (Next Steps)
 - [ ] WLAN-Upload: Bilder erst im WLAN hochladen
@@ -9,6 +10,8 @@
 - [ ] Bildergalerie verbessern: Scrollbar/Wischen bei mehreren Bildern (Vorschau-System) / Gallerie Ansicht (Kleine Vorschaubilder)
 - [ ] X zum Feld schließen beim Popup größer machen, da sehr klein, falls man ausversehen klickt
 - [ ] Marker Clustering (Zusammenfassen von Icons bei Zoom)
+- [ ] Text speichern für nächsten Upload? Checkbox
+- [ ] Notizen nachträglich bearbeiten
 
 ## 🟢 P2: Features & Design (Zukunft)
 - [ ] Sidebar/Top-Bar schlanker machen (ausblendbar/scrollbar)
