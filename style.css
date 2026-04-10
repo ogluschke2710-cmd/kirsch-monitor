@@ -1,0 +1,193 @@
+/* --- ALLGEMEINES LAYOUT --- */
+body,
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: sans-serif;
+}
+
+#map {
+    height: 100vh;
+    width: 100%;
+}
+
+/* --- SIDEBAR / TOPBAR OBEN LINKS --- */
+.sidebar-info {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 10px;
+    border: 2px solid #333;
+    box-shadow: 4px 4px 0px #333;
+    max-width: 300px;
+}
+
+@media (max-width: 600px) {
+    .sidebar-info {
+        top: 5px;
+        left: 5px;
+        right: 5px;
+        max-width: none;
+        padding: 8px;
+    }
+
+    .sidebar-info h2 {
+        font-size: 16px;
+    }
+
+    .sidebar-info p {
+        font-size: 13px;
+        margin: 3px 0;
+    }
+}
+
+/* --- POPUPS AUF DER KARTE --- */
+.custom-popup {
+    font-size: 16px;
+    width: 280px;
+    text-align: center;
+}
+
+.custom-popup b {
+    display: block;
+    margin-bottom: 5px;
+    text-transform: capitalize;
+}
+
+.custom-popup img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 8px;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.custom-popup button {
+    color: white;
+    border: none;
+    padding: 10px;
+    width: 100%;
+    cursor: pointer;
+    margin-top: 10px;
+    font-weight: bold;
+    border-radius: 4px;
+}
+
+/* Absoluter Gleichmacher für alle Felder */
+.custom-popup input[type="text"],
+.custom-popup textarea,
+.custom-popup select {
+    width: 100% !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
+    margin-bottom: 12px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    font-size: 14px !important;
+    color: #333 !important;
+}
+
+.custom-popup textarea {
+    height: 80px !important;
+    resize: none;
+}
+
+/* --- MARKER & FOOTER --- */
+.cherry-emoji-marker {
+    font-size: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.footer-links {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 1000;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 5px 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+.footer-links a {
+    color: #333;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* --- LADE-SPINNER --- */
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* --- BUTTON-STEUERUNG (ZOOM & GPS) --- */
+.leaflet-control-locate {
+    background: white !important;
+    width: 34px !important;
+    height: 34px !important;
+    cursor: pointer;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4) !important;
+    border-radius: 4px !important;
+    border: 2px solid rgba(0, 0, 0, 0.2) !important;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px !important;
+}
+
+/* A) DESKTOP ANSICHT */
+@media (min-width: 769px) {
+    .leaflet-control-locate {
+        margin-bottom: 10px !important;
+    }
+
+    .leaflet-control-zoom {
+        margin-bottom: 20px !important;
+    }
+}
+
+/* B) MOBILE ANSICHT (Handys) */
+@media (max-width: 768px) {
+    .leaflet-bottom.leaflet-right {
+        bottom: 55px !important;
+        margin-right: 5px !important;
+    }
+
+    .leaflet-control-locate {
+        margin-bottom: 12px !important;
+    }
+
+    .footer-links {
+        bottom: 10px !important;
+        left: 10px !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        border: 1px solid #ccc;
+        padding: 5px !important;
+        max-width: 65%;
+    }
+}

@@ -21,7 +21,6 @@
 - [ ] Suche & Filter (z.B. nach Entdeckernamen)
 - [ ] Animierte Icons (Pulsieren beim Drüberfahren) ggf Timeout, damit wahrnehmbar
 - [ ] ID-Anzeige, Statistik-Seite & Leaderboard ("Kornel-König").
-- [ ] HTML, JS und CSS in eigene Dateien für einfacheres Debugging etc
 
 ## ✅ Erledigt (Das Archiv des Erfolgs)
 - [x] Notizen bei Einträgen
@@ -45,7 +44,8 @@
 - [x] Meldung oben links "markiert gefunden" fixen
 - [x] Disclaimer "dein Name" in "Dein Entdeckername", damit klar ist, dass der optionale Name gemeint ist
 - [x] Marker Clustering (Zusammenfassen von Icons bei Zoom)
+- [x] HTML, JS und CSS in eigene Dateien für einfacheres Debugging etc
 
 
 ---
-*Zuletzt aktualisiert: Freitagabend, 10.04.2026*
+*Zuletzt aktualisiert: Samstagmorgen, 11.04.2026*

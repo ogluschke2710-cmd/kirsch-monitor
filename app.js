@@ -1,0 +1,624 @@
+// --- 1. SETUP ---
+const SUPABASE_URL = 'https://kiorpmxzdjkpiihoixzk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Rbiv_1ArwwN40lR9fGDD7g_iJlhHCn2';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// --- 2. ADMIN-LOGIK ---
+function binIchAdmin() { return localStorage.getItem('istAdmin') === 'true'; }
+
+function checkAdminStatusManual(event) {
+    event.preventDefault();
+    const eingabe = prompt("Admin-Sperre: Bitte Passwort eingeben:");
+    if (eingabe) {
+        const hashEingabe = CryptoJS.SHA256(eingabe.trim()).toString();
+        const korrekterHash = "ca3b43fcb382fb262d183a3e8a1121a040d77e634d5041e18d26d8e0555417cd";
+        if (hashEingabe === korrekterHash) {
+            localStorage.setItem('istAdmin', 'true');
+            alert("Willkommen zurück, Admin! 🍒");
+            location.reload();
+        } else { alert("Zugriff verweigert."); }
+    }
+}
+
+// --- 3. KARTEN SETUP ---
+
+// 1. Letzte Position aus dem Gedächtnis holen (oder Berlin als Standard setzen)
+const savedPos = localStorage.getItem('lastPos');
+const lastPos = savedPos ? JSON.parse(savedPos) : { lat: 52.5144, lng: 13.3504, zoom: 14 }; // Standard: Tiergarten
+
+// 2. Karte initialisieren
+const map = L.map('map', { zoomControl: false }).setView([lastPos.lat, lastPos.lng], lastPos.zoom);
+
+// 1. Zuerst die Karte mit Bildern füllen
+L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: 'Google'
+}).addTo(map);
+
+// 2. Zoom-Steuerung und GPS-Ortung
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+map.locate({ setView: true, maxZoom: 16 });
+
+// 3. Erst jetzt den Cluster-Sammelkorb vorbereiten
+const markers = L.markerClusterGroup();
+map.addLayer(markers);
+
+map.on('moveend', function () {
+    const center = map.getCenter();
+    localStorage.setItem('lastPos', JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() }));
+});
+
+const cherryIcon = L.divIcon({
+    html: '🍒', className: 'cherry-emoji-marker', iconSize: [30, 30], iconAnchor: [15, 15]
+});
+
+// --- 4. MARKER & LADEN ---
+
+// Diese Funktion zeichnet eine einzelne Kirsche auf die Karte
+function addMarkerToMap(s) {
+    let popupContent = `<div class="custom-popup"><b>${s.art}</b>`;
+
+    // Name des Entdeckers anzeigen, falls vorhanden
+    if (s.entdecker) {
+        popupContent += `<i style="font-size:12px; color:gray;">Entdeckt von: ${s.entdecker}</i>`;
+    }
+
+    // Notiz anzeigen, falls vorhanden
+    if (s.notiz) {
+        popupContent += `<p style="font-size:14px; background:#f9f9f9; padding:8px; border-left:3px solid #27ae60; margin:10px 0; font-style:italic;">"${s.notiz}"</p>`;
+    }
+
+    // Bilder-Logik: Wir prüfen, ob es ein Array (fotos) oder eine einzelne URL (foto_url) gibt
+    let bListe = s.fotos || [];
+    if (bListe.length === 0 && s.foto_url) { bListe = [s.foto_url]; }
+
+    // KOMPAKTE GALERIE (Mit gemeinsamem Container)
+    popupContent += `<div class="gallery-container">`; // NEU: Der gemeinsame Karton
+    bListe.forEach((url, index) => {
+        if (index === 0) {
+            popupContent += `<div class="gallery-item" data-src="${url}">
+                                <img src="${url}" alt="${s.art}" loading="lazy">
+                             </div>`;
+        } else {
+            popupContent += `<div class="gallery-item" data-src="${url}" style="display: none;"></div>`;
+        }
+    });
+    popupContent += `</div>`; // Karton schließen
+
+    // Kleiner optischer Hinweis für den Nutzer, wenn es mehr als 1 Bild gibt
+    if (bListe.length > 1) {
+        popupContent += `<p style="font-size:11px; color:#666; margin-top:2px; text-align:center;">📸 + ${bListe.length - 1} weitere Fotos (Klick aufs Bild)</p>`;
+    }
+
+    // Buttons für Aktionen im Popup
+    popupContent += `<button onclick="openPhotoUpload(${s.id})" style="background:#27ae60; margin-top:10px;">📷 Foto nachreichen</button>`;
+
+    // Lösch-Button nur für Admins sichtbar machen
+    if (binIchAdmin()) {
+        popupContent += `<hr style="border: 0.5px solid #eee; margin: 10px 0;">
+             <button onclick="deleteSichtung(${s.id})" style="background:#ff4d4d; color:white; border:none; border-radius:4px; padding:8px; width:100%; font-weight:bold; cursor:pointer;">🗑️ Eintrag löschen</button>`;
+    }
+
+    popupContent += `</div>`;
+
+    // Den Marker erstellen und zurückgeben (NICHT direkt auf die Karte setzen)
+    return L.marker([s.lat, s.lng], { icon: cherryIcon, sichtungId: s.id })
+        .bindPopup(popupContent);
+}
+
+// Hauptfunktion zum Laden aller Standorte aus der Datenbank
+async function loadSichtungen() {
+    const counterElement = document.getElementById('counter');
+    if (!counterElement) return;
+
+    // 1. Visuelles Feedback: Spinner starten
+    counterElement.innerHTML = '<span class="spinner"></span> Suche Kirschen...';
+
+    try {
+        // 2. Datenbank-Abfrage an Supabase senden
+        const { data, error, count } = await supabaseClient
+            .from('sichtungen')
+            .select('*', { count: 'exact' });
+
+        // Falls Supabase einen Fehler meldet, direkt zum 'catch' Block springen
+        if (error) throw error;
+
+        if (data) {
+            // 1. Den Cluster-Korb komplett leeren
+            markers.clearLayers();
+
+            // 2. Alle Kirschen in einer Liste sammeln
+            const neueMarkerListe = data.map(s => addMarkerToMap(s));
+
+            // 3. Alle auf einmal in den Korb werfen (geht rasend schnell)
+            markers.addLayers(neueMarkerListe);
+
+            // 4. Erfolg: Text aktualisieren (P0 Fix inklusive)
+            counterElement.innerText = `${count || 0} Kirschen im Monitor`;
+        }
+    } catch (err) {
+        // Fehlerbehandlung: Spinner stoppen und Nachricht anzeigen
+        console.error("Fehler beim Laden:", err);
+        counterElement.innerText = "Fehler beim Laden der Kirschen.";
+    }
+}
+
+// Die Funktion direkt beim Start der Seite einmal ausführen
+loadSichtungen();
+
+// Gedächtnis für Captcha Spam Filter
+let klickZeiten = [];
+
+// --- DER FINGERABDRUCK (Spam-Tracking) ---
+// Wir schauen nach, ob der Besucher schon ein Bändchen hat
+let fingerprint = localStorage.getItem('cherry_fingerprint');
+
+// Wenn nicht, basteln wir ihm ein neues (z.B. "user_7x9p2m")
+if (!fingerprint) {
+    fingerprint = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('cherry_fingerprint', fingerprint);
+}
+// ----------------------------------------------
+
+// LightGallery initialisieren, sobald ein Popup geöffnet wird
+map.on('popupopen', function () {
+    const galleryContainers = document.querySelectorAll('.gallery-container');
+    galleryContainers.forEach(container => {
+        if (window.lightGallery) {
+            lightGallery(container, {
+                selector: '.gallery-item', // WICHTIG: Sagt LG, dass alle diese Items zusammengehören
+                plugins: [lgZoom],
+                speed: 500,
+                download: false
+            });
+        }
+    });
+});
+
+// --- 5. NEUER EINTRAG ---
+map.on('click', function (e) {
+    const lat = e.latlng.lat; const lng = e.latlng.lng;
+    const gespeicherterName = localStorage.getItem('entdeckerName') || '';
+
+    // --- NEU: Notiz-Speicher auslesen ---
+    const sollNotizBleiben = localStorage.getItem('keepNote') === 'true';
+    const gespeicherteNotiz = sollNotizBleiben ? (localStorage.getItem('lastNotiz') || '') : '';
+    // ------------------------------------
+
+    // --- CAPTCHA GEHIRN MIT SPAM-FILTER ---
+    const jetzt = Date.now();
+    klickZeiten.push(jetzt);
+
+    // Behalte nur Klicks aus den letzten 20 Sekunden
+    klickZeiten = klickZeiten.filter(zeit => jetzt - zeit < 20000);
+
+    // Alarmstufe ab dem 6. Klick (Länge > 5)
+    const zeigeCaptcha = klickZeiten.length > 5;
+
+    // Zwei zufällige Zahlen für die Matheaufgabe
+    const zahl1 = Math.floor(Math.random() * 10) + 1;
+    const zahl2 = Math.floor(Math.random() * 10) + 1;
+
+    // Wenn wir kein Captcha zeigen, übergeben wir -1 als Geheimsymbol für "kein Test nötig"
+    const richtigeAntwort = zeigeCaptcha ? (zahl1 + zahl2) : -1;
+
+    // Baue das rote HTML-Schild zusammen, aber NUR, wenn zeigeCaptcha "wahr" (true) ist
+    const captchaHtml = zeigeCaptcha ? `
+        <label style="font-size:12px; color:#e74c3c; font-weight:bold;">Zu viele Klicks! Bist du ein Mensch? 🤔</label>
+        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+            <span id="captcha-frage" style="font-size:14px; margin-right: 10px; font-weight: bold;">Was ist ${zahl1} + ${zahl2}?</span>
+            <input type="number" id="captcha-antwort" placeholder="Ergebnis" style="width: 80px !important; margin-bottom: 0 !important; padding: 6px !important;">
+        </div>
+    ` : '';
+    // -------------------------------------------
+
+    const formHtml = `
+    <div class="custom-popup" style="text-align: left;">
+        <h3 style="margin-top:0;">Sichtung eintragen</h3>
+        
+        <label style="font-size:12px; color:#666;">Entdecker:</label>
+        <input type="text" id="entdecker-input" value="${gespeicherterName}" placeholder="Dein Entdeckername (optional)">
+
+        <label style="font-size:12px; color:#666;">Notizen / Zustand:</label>
+        <textarea id="notiz-input" placeholder="z.B. schwer erreichbar...">${gespeicherteNotiz}</textarea>
+        
+        <div style="margin-bottom: 12px; display: flex; align-items: center;">
+            <input type="checkbox" id="keep-note-checkbox" ${sollNotizBleiben ? 'checked' : ''} style="width: auto !important; margin-bottom: 0 !important; margin-right: 8px !important; cursor: pointer;">
+            <label for="keep-note-checkbox" style="font-size: 11px; color: #666; cursor: pointer; user-select: none;">Text für nächsten Eintrag merken</label>
+        </div>
+
+        <label style="font-size:12px; color:#666;">Größe des Bestands:</label>
+        <select id="size">
+            <option value="heckenpflanze">Heckenpflanze</option>
+            <option value="sträuchchen">Sträuchchen</option>
+            <option value="strauch">Strauch</option>
+            <option value="hochstrauch">Hochstrauch</option>
+            <option value="baum">Baum</option>
+        </select>
+        
+        ${captchaHtml}
+
+        <label style="font-size:12px; color:#666;">Fotos hinzufügen:</label>
+        <input type="file" id="photo-input" accept="image/*" onchange="previewFile()" multiple>
+        <div id="photo-input-preview" style="margin-bottom:10px;"></div>
+        
+        <p style="font-size: 10px; color: #7f8c8d; line-height: 1.2; margin-bottom: 12px; border-top: 1px solid #eee; padding-top: 8px;">
+            Hinweis: Mit dem Speichern erklärst du dich einverstanden, dass Standort, Name und Foto öffentlich auf der Karte angezeigt werden.
+        </p>
+        
+        <button id="save-btn" onclick="saveAll(${lat}, ${lng}, ${richtigeAntwort})" style="background:#2c3e50;">Speichern</button>
+    </div>`;
+    L.popup().setLatLng(e.latlng).setContent(formHtml).openOn(map);
+});
+
+function previewFile() {
+    const previewContainer = document.getElementById('photo-input-preview');
+    const files = document.getElementById('photo-input').files;
+    previewContainer.innerHTML = ''; previewContainer.style.display = 'flex';
+    if (files) {
+        [...files].forEach(file => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const img = document.createElement('img');
+                img.src = reader.result; img.style.width = '60px'; img.style.height = '60px';
+                img.style.objectFit = 'cover'; img.style.borderRadius = '4px'; img.style.margin = '2px';
+                previewContainer.appendChild(img);
+            }
+            reader.readAsDataURL(file);
+        });
+    }
+}
+
+// HIER KOMMT DIE ÄNDERUNG: Wir nehmen die richtigeAntwort als dritten Parameter entgegen!
+async function saveAll(lat, lng, richtigeAntwort) {
+
+    // --- NEU: DER TÜRSTEHER ---
+    if (richtigeAntwort !== -1) {
+        const userAntwort = parseInt(document.getElementById('captcha-antwort').value);
+        if (isNaN(userAntwort) || userAntwort !== richtigeAntwort) {
+            alert("Falsches Ergebnis! Bist du vielleicht doch ein Spambot? 🤖");
+            return;
+        }
+    }
+    // --------------------------
+
+    const btn = document.getElementById('save-btn');
+    const files = document.getElementById('photo-input').files;
+    const notizText = document.getElementById('notiz-input').value;
+    localStorage.setItem('entdeckerName', document.getElementById('entdecker-input').value);
+
+    // --- NEU: Notiz-Gedächtnis abspeichern ---
+    const keepNoteCheckbox = document.getElementById('keep-note-checkbox');
+    if (keepNoteCheckbox) {
+        localStorage.setItem('keepNote', keepNoteCheckbox.checked);
+        if (keepNoteCheckbox.checked) {
+            localStorage.setItem('lastNotiz', notizText);
+        } else {
+            localStorage.removeItem('lastNotiz');
+        }
+    }
+    // -----------------------------------------
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Verarbeite Bilder...';
+
+    let finalImageUrls = [];
+    for (let i = 0; i < files.length; i++) {
+        btn.innerHTML = `<span class="spinner"></span> Bild ${i + 1}/${files.length}...`;
+        await new Promise(r => setTimeout(r, 50));
+        const resizedBlob = await resizeImage(files[i], 1600, 1600);
+        const fileName = Date.now() + "_" + Math.floor(Math.random() * 1000000) + ".jpg";
+        const { error } = await supabaseClient.storage.from('pflanzenfotos').upload(fileName, resizedBlob);
+        if (!error) {
+            const { data } = supabaseClient.storage.from('pflanzenfotos').getPublicUrl(fileName);
+            finalImageUrls.push(data.publicUrl);
+        }
+    }
+
+    btn.innerHTML = '<span class="spinner"></span> Finalisiere...';
+
+    const { error: dbError } = await supabaseClient.from('sichtungen').insert([{
+        lat, lng,
+        art: document.getElementById('size').value,
+        entdecker: localStorage.getItem('entdeckerName'),
+        fotos: finalImageUrls,
+        foto_url: finalImageUrls[0] || null,
+        notiz: notizText,
+        session_id: fingerprint // <--- NEU: Hier übergeben wir das Besucher-Bändchen an Supabase
+    }]);
+
+    if (!dbError) {
+        alert("Gespeichert! 🍒");
+        map.closePopup();
+        loadSichtungen();
+    } else {
+        alert("Fehler beim Speichern!");
+        btn.disabled = false;
+        btn.innerText = "Speichern";
+    }
+}
+
+function openPhotoUpload(id) {
+    const uploadHtml = `<div class="custom-popup"><h3>Fotos nachreichen</h3><input type="file" id="extra-photo-input" accept="image/*" multiple><br><br><button id="extra-save-btn" onclick="uploadExtraPhotos(${id})" style="background:#27ae60;">Hochladen</button></div>`;
+    L.popup().setLatLng(map.getCenter()).setContent(uploadHtml).openOn(map);
+}
+
+async function uploadExtraPhotos(id) {
+    const btn = document.getElementById('extra-save-btn');
+    const files = document.getElementById('extra-photo-input').files;
+
+    if (!files || files.length === 0) {
+        alert("Bitte wähle zuerst Bilder aus!");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "Lade Daten...";
+
+    try {
+        const { data: sichtung, error: fetchError } = await supabaseClient
+            .from('sichtungen')
+            .select('fotos, foto_url')
+            .eq('id', id)
+            .single();
+
+        if (fetchError) {
+            console.error("Fetch Error:", fetchError);
+            throw new Error("Konnte den bestehenden Eintrag nicht laden.");
+        }
+
+        let currentPhotos = [];
+        if (Array.isArray(sichtung.fotos)) {
+            currentPhotos = [...sichtung.fotos];
+        }
+
+        if (currentPhotos.length === 0 && sichtung.foto_url) {
+            currentPhotos.push(sichtung.foto_url);
+        }
+
+        let uploadErfolgreich = false;
+
+        for (let i = 0; i < files.length; i++) {
+            btn.innerText = `Bild ${i + 1}/${files.length}...`;
+            const file = files[i];
+
+            try {
+                const resizedBlob = await resizeImage(file, 1600, 1600);
+                const fileName = `extra_${Date.now()}_${Math.floor(Math.random() * 1000000)}.jpg`;
+
+                const { error: uploadError } = await supabaseClient.storage
+                    .from('pflanzenfotos')
+                    .upload(fileName, resizedBlob);
+
+                if (uploadError) {
+                    console.error(`Fehler beim Upload von Bild ${i + 1}:`, uploadError);
+                    continue;
+                }
+
+                const { data } = supabaseClient.storage
+                    .from('pflanzenfotos')
+                    .getPublicUrl(fileName);
+
+                currentPhotos.push(data.publicUrl);
+                uploadErfolgreich = true;
+
+            } catch (imageError) {
+                console.error(`Fehler bei der Bildverarbeitung ${i + 1}:`, imageError);
+            }
+        }
+
+        if (!uploadErfolgreich) {
+            throw new Error("Kein Bild konnte erfolgreich hochgeladen werden.");
+        }
+
+        btn.innerText = "Speichere Datenbank...";
+
+        const { error: updateError } = await supabaseClient
+            .from('sichtungen')
+            .update({ fotos: currentPhotos })
+            .eq('id', id);
+
+        if (updateError) {
+            console.error("Update Error:", updateError);
+            throw new Error("Konnte die Datenbank nicht mit den neuen Bildern aktualisieren.");
+        }
+
+        alert("Bilder erfolgreich nachgereicht! 🍒");
+        map.closePopup();
+        loadSichtungen();
+
+    } catch (e) {
+        console.error("Kritischer Fehler beim Nachreichen:", e);
+        alert(`Fehler: ${e.message}\nSchau in die Entwicklerkonsole für Details.`);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Hochladen";
+    }
+}
+
+async function deleteSichtung(id) {
+    const confirmDelete = confirm("Möchtest du diesen Standort wirklich unwiderruflich löschen?");
+    if (!confirmDelete) return;
+
+    const deletePw = prompt("Bitte den Datenbank-Sicherheits-Key eingeben:");
+    if (!deletePw) return;
+
+    try {
+        const adminClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            global: {
+                headers: { 'x-admin-password': deletePw }
+            }
+        });
+
+        const { data, error } = await adminClient
+            .from('sichtungen')
+            .delete()
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            alert("Kritischer Datenbank-Fehler: " + error.message);
+        } else if (data && data.length === 0) {
+            alert("Stopp! Löschen abgelehnt. Hast du das falsche Passwort eingegeben?");
+        } else {
+            alert("Eintrag erfolgreich gelöscht! 🗑️");
+            map.closePopup();
+            loadSichtungen();
+        }
+    } catch (err) {
+        console.error("Fehler beim Löschversuch:", err);
+        alert("Ein unerwarteter Fehler ist aufgetreten.");
+    }
+}
+
+function resizeImage(file, maxWidth, maxHeight) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width, h = img.height;
+                if (w > h) { if (w > maxWidth) { h *= maxWidth / w; w = maxWidth; } }
+                else { if (h > maxHeight) { w *= maxHeight / h; h = maxHeight; } }
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                canvas.toBlob(b => resolve(b), 'image/jpeg', 0.8);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function locateMe() {
+    console.log("GPS Button aktiv - starte Suche...");
+    map.stopLocate();
+    map.locate({
+        setView: true,
+        maxZoom: 16,
+        enableHighAccuracy: true
+    });
+}
+
+map.on('locationfound', (e) => {
+    map.eachLayer(layer => {
+        if (layer instanceof L.Circle && layer.options.color === '#3498db') {
+            map.removeLayer(layer);
+        }
+    });
+
+    L.circle(e.latlng, {
+        radius: e.accuracy / 2,
+        interactive: false,
+        color: '#3498db',
+        fillColor: '#3498db',
+        fillOpacity: 0.15
+    }).addTo(map);
+});
+
+map.on('locationerror', (e) => {
+    console.error("GPS Fehler:", e.message);
+    if (e.message !== "Geolocation error: User denied Geolocation.") {
+        alert("Standort konnte nicht gefunden werden. Bitte prüfe deine GPS-Einstellungen.");
+    }
+});
+
+const CustomLocate = L.Control.extend({
+    options: { position: 'bottomright' },
+    onAdd: function (map) {
+        const div = L.DomUtil.create('div', 'leaflet-control-locate');
+        div.innerHTML = '📍';
+        L.DomEvent.on(div, 'click', function (e) {
+            L.DomEvent.stopPropagation(e);
+            L.DomEvent.preventDefault(e);
+            locateMe();
+        });
+        return div;
+    }
+});
+map.addControl(new CustomLocate());
+
+function openImpressum() {
+    const legalHtml = `
+        <div style="text-align: left; max-height: 400px; overflow-y: auto; padding: 15px; line-height: 1.5; font-size: 13px;">
+            <h2 style="margin-top:0; color: #27ae60;">Impressum & Datenschutz</h2>
+            
+            <h3 style="color: #27ae60;">Datenschutzerklärung</h3>
+            <p>Diese App ist ein privates Projekt zur Dokumentation von Kornelkirschen. Die Nutzung erfolgt freiwillig und dient dem Naturschutz sowie der Information.</p>
+
+            <p><b>1. Hosting & Infrastruktur</b><br>
+            Diese Webseite wird bei <b>GitHub Pages</b> und <b>Netlify</b> gehostet. Beim Aufruf der Seite werden technisch notwendige Verbindungsdaten (IP-Adresse, Browsertyp) an diese Anbieter übertragen, um die Seite anzuzeigen.</p>
+
+            <p><b>2. Datenbank & Medien (Supabase)</b><br>
+            Deine Einträge (Standort, optionaler Name, Fotos) werden in einer Datenbank bei <b>Supabase</b> gespeichert. Mit dem Absenden einer Sichtung erklärst du dich einverstanden, dass diese Daten öffentlich auf der Karte angezeigt werden.</p>
+
+            <p><b>3. Kartendienst (Google Maps)</b><br>
+            Diese App nutzt Kartenkacheln von Google Maps. Dabei wird deine IP-Adresse an Server von Google übertragen. Dies ist notwendig, um die geografische Karte darzustellen.</p>
+
+            <p><b>4. Standortdaten</b><br>
+            Die GPS-Funktion ("Locate Me") greift nur nach deiner ausdrücklichen Freigabe auf deinen Standort zu. Diese Daten werden nur lokal im Browser verarbeitet, außer du entscheidest dich aktiv, einen Standort zu speichern.</p>
+
+            <p><b>5. Deine Rechte</b><br>
+            Du hast das Recht, Auskunft über deine gespeicherten Daten zu erhalten oder deren Löschung zu verlangen. Kontaktiere mich dazu bitte per E-Mail.</p>
+
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+
+            <h3 style="color: #27ae60;">Anbieterkennzeichnung (Impressum)</h3>
+            <p><b>Verantwortlich für diesen Inhalt:</b><br>
+            Oliver Gluschke<br>
+            Prenzlauer Promenade 177<br>
+            13189 Berlin<br>
+            E-Mail: ogluschke@web.de</p>
+        </div>
+    `;
+    L.popup().setLatLng(map.getCenter()).setContent(legalHtml).openOn(map);
+}
+
+function openAbout() {
+    const aboutHtml = `
+        <div style="text-align: left; max-height: 400px; overflow-y: auto; padding: 15px; line-height: 1.5;">
+            <img src="about-bild.jpg" 
+            style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" 
+            alt="Blühende Kornelkirsche">
+
+            <h2 style="margin-top:0; color: #27ae60;">Über den Kornelkirschen-Monitor 🍒</h2>
+            
+            <p><b>Warum diese App?</b><br>
+            Vielleicht ist es dir auch schon aufgefallen: Im Vorfrühling leuchten unsere Gärten und Parks überall knallgelb. Meistens ist das die Forsythie. Sie sieht prächtig aus, verbirgt aber ein ökologisches Geheimnis: Für unsere Insektenwelt ist sie so nützlich wie eine Plastikblume, da sie weder Pollen noch Nektar bietet.</p>
+            
+            <p><b>Die Heldin im Hintergrund: Die Kornelkirsche (Cornus mas)</b><br>
+            Fast zur gleichen Zeit blüht ein heimisches Wunderwerk ebenfalls in leuchtendem Gelb: die Kornelkirsche. Im Gegensatz zur Forsythie ist sie ein echtes Buffet für die Natur. Als eine der ersten Nahrungsquellen im Jahr liefert sie wertvollen Nektar für früh fliegende Wildbienen und Hummeln. Später im Jahr trägt sie Früchte, die nicht nur Vögeln schmecken, sondern auch für uns Menschen essbar und gesund sind. Doch leider wird sie oft von der sterilen Forsythie verdrängt.</p>
+            
+            <p><b>Unsere Mission</b><br>
+            Der Kornelkirschen-Monitor ist ein Herzensprojekt für alle, denen Biodiversität und Artenschutz wichtig sind. Wir möchten:</p>
+            <ul style="padding-left: 20px; margin-top: 0;">
+                <li><b>Sichtbarkeit schaffen:</b> Wo wachsen sie noch, die echten Kornelkirschen?</li>
+                <li><b>Wissen teilen:</b> Damit dieser wertvolle Strauch wieder einen festen Platz in unseren Köpfen und Gärten findet.</li>
+                <li><b>Gemeinsam dokumentieren:</b> Hilf mit, Standorte einzutragen, um eine lebendige Landkarte unserer Natur zu weben.</li>
+            </ul>
+            
+            <p>Egal ob du Standorte für die Ernte suchst, Setzlinge ziehen willst (bitte immer geltendes Naturschutzrecht beachten!) oder einfach nur neugierig bist:</p>
+
+            <p style="font-weight: bold; text-align: center;">Schön, dass du dabei bist! 🍒✨</p>
+
+            <p style="font-style: italic; font-size: 11px; border-top: 1px solid #eee; padding-top: 10px; margin-top: 15px; color: #666;">
+                Ein kleiner technischer Hinweis: Dieses Projekt wurde von einem Naturfreund ohne vorherige Coding-Erfahrung ins Leben gerufen – erstellt mit der kreativen und technischen Unterstützung der KI Gemini. Ein Beweis dafür, dass Technik dabei helfen kann, unsere echte Umwelt besser zu verstehen.
+            </p>
+        </div>
+    `;
+    L.popup().setLatLng(map.getCenter()).setContent(aboutHtml).openOn(map);
+}
+
+function updateAdminUI() {
+    const logoutLink = document.getElementById('admin-logout-link');
+    if (logoutLink && binIchAdmin()) { logoutLink.style.display = 'inline'; }
+}
+function adminLogout() { if (confirm("Abmelden?")) { localStorage.removeItem('istAdmin'); location.reload(); } }
+updateAdminUI();
+
+function cherryMagic() {
+    const text = document.getElementById('counter').innerText;
+    // Wir nehmen nur die Zahl am Anfang des Textes
+    const anzahl = text.split(' ')[0];
+    alert(`Wahnsinn! Es wurden schon ${anzahl} Kornelkirschen entdeckt. Weiter so! 🍒✨`);
+}
