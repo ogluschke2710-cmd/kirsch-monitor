@@ -2,6 +2,8 @@
 
 ## 🔴 P0: Wichtig
 - [ ] Netlify updaten, sobald Limit wieder frei
+- [ ] Löschfunktion Reihenfolge ändern (Passworteingabe, dann Nachfrage ob wirklich unwiderruflich löschen)
+- [ ] Sharefunktion und Melden Funktion
 
 ## 🟡 P1: User Experience "Im Feld" (Next Steps)
 - [ ] WLAN-Upload: Bilder erst im WLAN hochladen
