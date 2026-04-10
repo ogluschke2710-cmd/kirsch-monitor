@@ -4,9 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kornelkirschen-Monitor v3.5</title>
+    <title>Kornelkirschen-Monitor v3.6</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lg-zoom.min.css" />
     <link rel="icon" type="image/svg+xml" href="Kornelkirsche.svg">
@@ -240,7 +242,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/lightgallery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/plugins/zoom/lg-zoom.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -269,19 +275,26 @@
         }
 
         // --- 3. KARTEN SETUP ---
-        // 1. Karte initialisieren mit der letzten Position (als Backup)
-        const lastPos = JSON.parse(localStorage.getItem('lastPos')) || { lat: 52.5200, lng: 13.4050, zoom: 13 };
+        
+        // 1. Letzte Position aus dem Gedächtnis holen (oder Berlin als Standard setzen)
+        const savedPos = localStorage.getItem('lastPos');
+        const lastPos = savedPos ? JSON.parse(savedPos) : { lat: 52.5144, lng: 13.3504, zoom: 14 }; // Standard: Tiergarten
+
+        // 2. Karte initialisieren
         const map = L.map('map', { zoomControl: false }).setView([lastPos.lat, lastPos.lng], lastPos.zoom);
 
-        // 2. SOFORT versuchen, den Nutzer zu finden und dorthin zu springen
-        map.locate({ setView: true, maxZoom: 16 });
-
-        // 3. Zoom-Steuerung hinzufügen
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
-
+        // 1. Zuerst die Karte mit Bildern füllen
         L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: 'Google'
         }).addTo(map);
+
+        // 2. Zoom-Steuerung und GPS-Ortung
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+        map.locate({ setView: true, maxZoom: 16 });
+
+        // 3. Erst jetzt den Cluster-Sammelkorb vorbereiten
+        const markers = L.markerClusterGroup();
+        map.addLayer(markers);
 
         map.on('moveend', function () {
             const center = map.getCenter();
@@ -341,11 +354,11 @@
 
             popupContent += `</div>`;
 
-            // Den Marker mit dem fertigen Popup auf die Karte setzen
-            L.marker([s.lat, s.lng], { icon: cherryIcon, sichtungId: s.id })
-                .addTo(map)
+            // Den Marker erstellen und zurückgeben (NICHT direkt auf die Karte setzen)
+            return L.marker([s.lat, s.lng], { icon: cherryIcon, sichtungId: s.id })
                 .bindPopup(popupContent);
         }
+
 
         // Hauptfunktion zum Laden aller Standorte aus der Datenbank
         async function loadSichtungen() {
@@ -365,18 +378,17 @@
                 if (error) throw error;
 
                 if (data) {
-                    // 3. Karte aufräumen: Nur Marker mit 'sichtungId' entfernen
-                    map.eachLayer(layer => {
-                        if (layer instanceof L.Marker && layer.options.sichtungId) {
-                            map.removeLayer(layer);
-                        }
-                    });
+                    // 1. Den Cluster-Korb komplett leeren
+                    markers.clearLayers();
 
-                    // 4. Daten verarbeiten: Jeden Eintrag aus der DB als Marker zeichnen
-                    data.forEach(s => addMarkerToMap(s));
+                    // 2. Alle Kirschen in einer Liste sammeln
+                    const neueMarkerListe = data.map(s => addMarkerToMap(s));
 
-                    // 5. Erfolg: Spinner durch die echte Anzahl ersetzen
-                    counterElement.innerText = `Aktuell ${count || 0} Standorte markiert`;
+                    // 3. Alle auf einmal in den Korb werfen (geht rasend schnell)
+                    markers.addLayers(neueMarkerListe);
+
+                    // 4. Erfolg: Text aktualisieren (P0 Fix inklusive)
+                    counterElement.innerText = `${count || 0} Kirschen im Monitor`;
                 }
             } catch (err) {
                 // Fehlerbehandlung: Spinner stoppen und Nachricht anzeigen
@@ -455,42 +467,41 @@
             // -------------------------------------------
 
             const formHtml = `
-                <div class="custom-popup" style="text-align: left;">
-                    <h3 style="margin-top:0;">Sichtung eintragen</h3>
-                    
-                    <label style="font-size:12px; color:#666; font-family:sans-serif;">Entdecker:</label>
-                    <input type="text" id="entdecker-input" value="${gespeicherterName}" placeholder="Dein Name (optional)" 
-                        style="width:100%; padding:8px; font-family:sans-serif; font-size:14px; border:1px solid #ccc; border-radius:4px; margin-bottom:10px;">
+    <div class="custom-popup" style="text-align: left;">
+        <h3 style="margin-top:0;">Sichtung eintragen</h3>
+        
+        <label style="font-size:12px; color:#666;">Entdecker:</label>
+        <input type="text" id="entdecker-input" value="${gespeicherterName}" placeholder="Dein Entdeckername (optional)">
 
-                    <label style="font-size:12px; color:#666; font-family:sans-serif;">Notizen / Zustand:</label>
-                    <textarea id="notiz-input" placeholder="z.B. schwer erreichbar..." 
-                        style="width:100%; height:60px; padding:8px; font-family:sans-serif; font-size:14px; border:1px solid #ccc; border-radius:4px; margin-bottom:10px;">${gespeicherteNotiz}</textarea>
-                    
-                    <div style="margin-bottom: 12px; display: flex; align-items: center;">
-                        <input type="checkbox" id="keep-note-checkbox" ${sollNotizBleiben ? 'checked' : ''} style="width: auto !important; margin-bottom: 0 !important; margin-right: 8px !important; cursor: pointer;">
-                        <label for="keep-note-checkbox" style="font-size: 11px; color: #666; cursor: pointer; user-select: none;">Text für nächsten Eintrag merken</label>
-                    </div>
-                    <label style="font-size:12px; color:#666;">Größe des Bestands:</label>
-                    <select id="size" style="width:100%; padding:8px; box-sizing:border-box; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;">
-                        <option value="heckenpflanze">Heckenpflanze</option>
-                        <option value="sträuchchen">Sträuchchen</option>
-                        <option value="strauch">Strauch</option>
-                        <option value="hochstrauch">Hochstrauch</option>
-                        <option value="baum">Baum</option>
-                    </select>
-                    
-                    ${captchaHtml}
+        <label style="font-size:12px; color:#666;">Notizen / Zustand:</label>
+        <textarea id="notiz-input" placeholder="z.B. schwer erreichbar...">${gespeicherteNotiz}</textarea>
+        
+        <div style="margin-bottom: 12px; display: flex; align-items: center;">
+            <input type="checkbox" id="keep-note-checkbox" ${sollNotizBleiben ? 'checked' : ''} style="width: auto !important; margin-bottom: 0 !important; margin-right: 8px !important; cursor: pointer;">
+            <label for="keep-note-checkbox" style="font-size: 11px; color: #666; cursor: pointer; user-select: none;">Text für nächsten Eintrag merken</label>
+        </div>
 
-                    <label style="font-size:12px; color:#666;">Fotos hinzufügen:</label>
-                    <input type="file" id="photo-input" accept="image/*" onchange="previewFile()" multiple style="width:100%; margin-bottom:10px;">
-                    <div id="photo-input-preview" style="margin-bottom:10px;"></div>
-                    
-                    <p style="font-size: 10px; color: #7f8c8d; line-height: 1.2; margin-bottom: 12px; border-top: 1px solid #eee; padding-top: 8px;">
-                        Hinweis: Mit dem Speichern erklärst du dich einverstanden, dass Standort, Name und Foto öffentlich auf der Karte angezeigt werden.
-                    </p>
-                    
-                    <button id="save-btn" onclick="saveAll(${lat}, ${lng}, ${richtigeAntwort})" style="background:#2c3e50; color:white; width:100%; padding:12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Speichern</button>
-                </div>`;
+        <label style="font-size:12px; color:#666;">Größe des Bestands:</label>
+        <select id="size">
+            <option value="heckenpflanze">Heckenpflanze</option>
+            <option value="sträuchchen">Sträuchchen</option>
+            <option value="strauch">Strauch</option>
+            <option value="hochstrauch">Hochstrauch</option>
+            <option value="baum">Baum</option>
+        </select>
+        
+        ${captchaHtml}
+
+        <label style="font-size:12px; color:#666;">Fotos hinzufügen:</label>
+        <input type="file" id="photo-input" accept="image/*" onchange="previewFile()" multiple>
+        <div id="photo-input-preview" style="margin-bottom:10px;"></div>
+        
+        <p style="font-size: 10px; color: #7f8c8d; line-height: 1.2; margin-bottom: 12px; border-top: 1px solid #eee; padding-top: 8px;">
+            Hinweis: Mit dem Speichern erklärst du dich einverstanden, dass Standort, Name und Foto öffentlich auf der Karte angezeigt werden.
+        </p>
+        
+        <button id="save-btn" onclick="saveAll(${lat}, ${lng}, ${richtigeAntwort})" style="background:#2c3e50;">Speichern</button>
+    </div>`;
             L.popup().setLatLng(e.latlng).setContent(formHtml).openOn(map);
         });
 
@@ -862,8 +873,11 @@
 
         function cherryMagic() {
             const text = document.getElementById('counter').innerText;
-            alert("Du hast schon " + text + " gefunden! Weiter so! 🍒✨");
+            // Wir nehmen nur die Zahl am Anfang des Textes
+            const anzahl = text.split(' ')[0];
+            alert(`Wahnsinn! Es wurden schon ${anzahl} Kornelkirschen entdeckt. Weiter so! 🍒✨`);
         }
+
     </script>
 </body>
 

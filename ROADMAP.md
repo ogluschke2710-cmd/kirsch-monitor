@@ -1,17 +1,16 @@
 # 🍒 Kornelkirschen-Monitor Roadmap
 
-## 🔴 P0: Kritisch wegen Datenschutz
+## 🔴 P0: Wichtig
 - [ ] Netlify updaten, sobald Limit wieder frei
-- [ ] Brauchen wir ein Cookie Banner oder so?
 
 ## 🟡 P1: User Experience "Im Feld" (Next Steps)
 - [ ] WLAN-Upload: Bilder erst im WLAN hochladen
-- [ ] Kamera-Integration: Fotos direkt in der App aufnehmen
 - [ ] Bildergalerie verbessern: Scrollbar/Wischen bei mehreren Bildern (Vorschau-System) / Gallerie Ansicht (Kleine Vorschaubilder)
 - [ ] X zum Feld schließen beim Popup größer machen, da sehr klein, falls man ausversehen klickt
-- [ ] Marker Clustering (Zusammenfassen von Icons bei Zoom)
 - [ ] Text speichern für nächsten Upload? Checkbox
 - [ ] Notizen nachträglich bearbeiten
+- [ ] Dynamische Marker-Icons (Verschiedene Map-Symbole basierend auf Einzelbaum vs. Hecke)
+- [ ] Auswahlfeld "Andere Pflanzen" mit Textfeld wo eingetragen werden muss welche Pflanze und Bild doer Pflicht
 
 ## 🟢 P2: Features & Design (Zukunft)
 - [ ] Sidebar/Top-Bar schlanker machen (ausblendbar/scrollbar)
@@ -39,7 +38,12 @@
 - [x] Captcha gegen Bot Attacken
 - [x] Supabase Rechte prüfen (Anon Key)
 - [x] Log Idee nochmal durchgehen
+- [x] Kamera-Integration: Fotos direkt in der App aufnehmen
+- [x] Brauchen wir ein Cookie Banner oder so? // Nein
+- [x] Meldung oben links "markiert gefunden" fixen
+- [x] Disclaimer "dein Name" in "Dein Entdeckername", damit klar ist, dass der optionale Name gemeint ist
+- [x] Marker Clustering (Zusammenfassen von Icons bei Zoom)
 
 
 ---
-*Zuletzt aktualisiert: Donnerstagabend, 02.04.2026*
+*Zuletzt aktualisiert: Freitagabend, 10.04.2026*
